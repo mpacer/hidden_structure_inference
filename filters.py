@@ -1,3 +1,4 @@
+import networkx as nx
 from registry import Registry
 
 class Filters(Registry):
@@ -16,7 +17,7 @@ class Filters(Registry):
     
 
 @Filters.register
-def extract_remove_outward_edges(exceptions_from_removal):
+def explicit_parent_offspring(exceptions_from_removal):
     """
     This covers both no_output and explicit_parent_offspring.
     """
@@ -38,7 +39,7 @@ def extract_remove_outward_edges(exceptions_from_removal):
     return remove_outward_edges
 
 @Filters.register
-def extract_remove_inward_edges(exceptions_from_removal):
+def explicit_child_parentage(exceptions_from_removal):
     """
     This covers both no input and explicit_child_parentage.
     """
