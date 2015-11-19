@@ -1,7 +1,6 @@
 import networkx as nx
-# import json
-import filters
-import conditions
+from filters import Filters
+from conditions import Conditions
 from networkx.readwrite import json_graph
 from utils import powerset
 from itertools import combinations
@@ -129,58 +128,46 @@ def set_graph_edge_types(graph,edge_list,edge_type):
     
 
 
-def generate_graphs(gen_dict):
+def generate_graphs(nodes, query_edge_set=None, filters=None, conditions=None):
     """
-    This needs to be edited and improved before this can be released to people outside of myself and collaborators. 
+    This needs to be edited and improved before this can be released to people outside of myself and collaborators.
     Currently it is too specific to my problem rather than being a general interface to generate these graphs.
     
     "use if key in dictionary"
     """
     
-    nodes = gen_dict["nodes"]
-    # explicit_parent_offspring = gen_dict["explicit_parent_offspring"]
-    query_edge_set = gen_dict["query_edge_set"]
-    reachable_node_pairs = gen_dict["reachable_node_pairs"]
+
+    # Is there a reduced set of nodes that we'll be querying?
+
+    if filters is None:
+        filters = []
+    if conditions is None:
+        conditions = []
 
     G = completeDiGraph(nodes)
     
-    # Build filters from dictionary
     filter_set = []
+    # Build filters from dictionary
+    for f, args in filters.items():
+        filter_set.append(getattr(Filters, f)(*args))
 
-    #if it bans self-loops then remove them
-    if ("no_self_loops" in gen_dict and 
-        gen_dict["no_self_loops"]):
-        filter_set.append(extract_remove_self_loops())
-        
-    # if you are explicitly setting children of certain nodes
-    if "explicit_child_parentage" in gen_dict:
-        filter_set.append(extract_remove_inward_edges(
-            gen_dict["explicit_child_parentage"]))
-
-    # if you are explicitly setting parents of certain nodes
-    # this includes 
-    if "explicit_parent_offspring" in gen_dict:
-        filter_set.append(extract_remove_outward_edges(
-            gen_dict["explicit_parent_offspring"]))
 
     # apply filter set to graph
     G_sub = filter_Graph(G,filter_set)
+
+    if query_edge_set is None:
+        query_edge_set = G_sub.edges()
+
 
     """are there any conditions that need to be evalutated on a 
     graph by graph basis?"""
     condition_set = []
 
-    if "reachable_node_pairs" in gen_dict:
-        condition_set.append(create_path_complete_condition(
-            gen_dict["reachable_node_pairs"]))
-
-    # are there a reduced set of nodes that we'll be querying?
-    if "query_edge_set" in gen_dict:
-        query_edge_set = gen_dict["query_edge_set"]
-    else:
-        query_edge_set = nodes
+    for f, args in conditions.items():
+        condition_set.append(getattr(Conditions, f)(*args))
 
     graph_set = partialConditionalSubgraphs(G_sub,query_edge_set,condition_set)
+
     working_graphs = list(graph_set)
 
     return working_graphs
