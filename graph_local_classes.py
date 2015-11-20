@@ -1,5 +1,6 @@
 import numpy as np
 import networkx as nx
+from utils import scale_free_sampler
 
 class GraphStructure(object):
     
@@ -8,16 +9,16 @@ class GraphStructure(object):
         self.edges = sorted(edges)
        
     @classmethod
-    def from_networkx(cls, graph):
-        # cls == Graph
+    def from_networkx(cls, graph, data=False):
+        # cls == GraphStructure
         # graph is a networkx object
-        nodes = graph.nodes()
-        edges = graph.edges()
+        nodes = graph.nodes(data=data)
+        edges = graph.edges(data=data)
         obj = cls(nodes, edges)
         return obj
     
     def to_networkx(self):
-        graph = nx.Graph()
+        graph = nx.DiGraph()
         graph.add_nodes(self.nodes)
         graph.add_edges(self.edges)
         return graph        
@@ -37,15 +38,16 @@ class GraphStructure(object):
     
 class GraphParams(object):
     
-    def __init__(self, n, lambda0=1.0, p=0.8):
+    def __init__(self, n,  p=0.8):
         self.n = n             # number of edges
-        self.lambda0 = lambda0 # scale-free parameter
         self.p = p             # probability of sending a message
+        self.lambda0 = None    # scale-free parameter
         self.psi = None        # psi edge parameters
         self.r = None          # r edge parameters
         self.mu = None         # psi / r
          
     def sample(self):
+        self.lambda0 = scale_free_sampler(lower_bound=1/100,upper_bound=100,size=1)
         self.psi = np.random.gamma(shape=1.0, scale=self.lambda0, size=self.n)
         self.r = np.random.gamma(shape=1.0, scale=self.lambda0, size=self.n)
         self.mu = self.psi / self.r
@@ -54,16 +56,17 @@ class GraphParams(object):
     def to_dict(self):
         return {
             "n": self.n,
+            "p": self.p,
+            "lambda0": self.lambda0,
             "psi": self.psi,
             "r": self.r,
-            "lambda0": self.lambda0,
-            "p": self.p,
             "mu": self.mu
         }
     
     @classmethod
     def from_dict(cls, d):
-        obj = cls(d['n'], lambda0=d['lambda0'], p=d['p'])
+        obj = cls(d['n'], p=d['p'])
+        obj.lambda0=d['lambda0']
         obj.psi = d['psi']
         obj.r = d['r']
         return obj
