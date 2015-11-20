@@ -168,8 +168,6 @@ def generate_graphs(nodes, query_edge_set=None, filters=None, conditions=None):
 
     graph_set = partialConditionalSubgraphs(G_sub,query_edge_set,condition_set)
 
-    working_graphs = list(graph_set)
-
     return working_graphs
 
 
