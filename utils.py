@@ -10,7 +10,7 @@ def powerset(iterable):
     powerset_vals = chain.from_iterable(combinations(s, r) for r in range(len(s)+1))
     return powerset_vals
 
-def scale_free_sampler(lower_bound = 1/10, upper_bound=10,size = 1):
+def scale_free_sampler(lower_bound = 1/10, upper_bound=10, size = 1):
     """
     This allows you to approximate the improper probability
     distribution P(λ) = 1/λ for the positive reals
@@ -33,5 +33,5 @@ def scale_free_sampler(lower_bound = 1/10, upper_bound=10,size = 1):
     bottom_val = np.log(lower_bound)
     top_val = np.log(upper_bound)
     
-    return list(np.exp(np.random.uniform(bottom_val,top_val, sample_size)))
+    return list(np.exp(np.random.uniform(bottom_val,top_val, size)))
 
