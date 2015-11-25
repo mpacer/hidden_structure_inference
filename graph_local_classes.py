@@ -35,19 +35,34 @@ class GraphStructure(object):
 
     def parents(self, node):
         return [e for e in self.edges if e[1] == node]
-    
+
+
 class GraphParams(object):
     
-    def __init__(self, n,  p=0.8):
+    def __init__(self, n, names = None, p=0.8, 
+        scale_free_bounds = (.01,100),
+        psi_shape = 1.0, r_shape = 1.0):
         self.n = n             # number of edges
+        if names is None:
+            self.names = tuple(range(n)) # names of edges
+        else:
+            self.names = names
         self.p = p             # probability of sending a message
+        self.scale_free_lbound = scale_free_bounds[0]
+        self.scale_free_ubound = scale_free_bounds[1]
+        self.psi_shape = psi_shape
+        self.r_shape = r_shape
         self.lambda0 = None    # scale-free parameter
         self.psi = None        # psi edge parameters
         self.r = None          # r edge parameters
         self.mu = None         # psi / r
-         
+        
+        
     def sample(self):
-        self.lambda0 = scale_free_sampler(lower_bound=1/100,upper_bound=100,size=1)
+        self.lambda0 = scale_free_sampler(
+            lower_bound=self.scale_free_lbound,
+            upper_bound=self.scale_free_ubound,
+            size=1)
         self.psi = np.random.gamma(shape=1.0, scale=self.lambda0, size=self.n)
         self.r = np.random.gamma(shape=1.0, scale=self.lambda0, size=self.n)
         self.mu = self.psi / self.r
@@ -61,8 +76,15 @@ class GraphParams(object):
             "psi": self.psi,
             "r": self.r,
             "mu": self.mu
+            "names": self.names
         }
     
+    @classmethod
+    def from_structure(cls,structure):
+        e_list = sorted(structure.edges)
+        g_para = cls(len(e_list), names = e_list)
+        return g_para
+
     @classmethod
     def from_dict(cls, d):
         obj = cls(d['n'], p=d['p'])
