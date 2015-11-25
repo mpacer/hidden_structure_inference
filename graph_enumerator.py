@@ -216,3 +216,22 @@ def generate_graphs(nodes, query_edge_set=None, filters=None, conditions=None):
 
 # def add_gamma_attribute_values(graph,edge_list,base_rate,scale):
 #     pass
+
+
+# def intervention_effects(graph):    
+#     return node_name_edge_picker_source_node("int", graph)
+
+# def cause_observation_pairings(graph):    
+#     return node_name_edge_picker_2_args("★", "obs", graph)
+
+# def hidden_cause_pairs(graph):
+#     return node_name_edge_picker_2_args("★", "★", graph)
+       
+
+# def local_graph_edge_types(graph):
+#     set_graph_edge_types(graph,intervention_effects(graph),"deterministic_intervention")
+#     set_graph_edge_types(graph,cause_observation_pairings(graph),"observed")
+#     set_graph_edge_types(graph,hidden_cause_pairs(graph),"hidden")
+    
+# def node_to_edge_semantics(graph):
+#     pass
