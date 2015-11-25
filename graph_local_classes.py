@@ -57,7 +57,16 @@ class GraphParams(object):
         self.r = None          # r edge parameters
         self.mu = None         # psi / r
         
-        
+    def init_to_dict(self):
+        return {
+            "n": self.n,
+            "names": self.names,
+            "p": self.p,
+            "scale_free_bounds": (self.scale_free_lbound, self.scale_free_ubound),
+            "psi_shape": self.psi_shape,
+            "r_shape": self.r_shape
+        }
+
     def sample(self):
         self.lambda0 = scale_free_sampler(
             lower_bound=self.scale_free_lbound,
@@ -83,14 +92,17 @@ class GraphParams(object):
         }
     
     @classmethod
-    def from_structure(cls,structure):
+    def from_structure(cls,structure,init_dict=None):
         e_list = sorted(structure.edges)
-        g_para = cls(len(e_list), names = e_list)
+        if init_dict is None:
+            init_dict = {}
+        init_dict["names"] = e_list
+        g_para = cls(len(e_list), **init_dict)
         return g_para
 
     @classmethod
-    def from_dict(cls, d):
-        obj = cls(d['n'], p=d['p'])
+    def from_dict(cls, full_dict):
+        obj = cls(**full_dict)
         obj.lambda0=d['lambda0']
         obj.psi = d['psi']
         obj.r = d['r']
