@@ -127,6 +127,37 @@ def set_graph_edge_types(graph,edge_list,edge_type):
             nx.set_edge_attributes(graph,"edge_type",{edge:edge_type})
     
 
+def subgraph_from_edges(G,edge_list,ref_back=True):
+    """
+    Creates a networkx graph that is a subgraph of G
+    defined by the list of edges in edge_list.
+
+    Requires G to be a networkx Graph or DiGraph
+    edge_list is a list of edges in either (u,v) or (u,v,d) form
+    where u and v are nodes comprising an edge, 
+    and d would be a dictionary of edge attributes
+
+    ref_back determines whether the created subgraph refers to back
+    to the original graph and therefore changes to the subgraph's 
+    attributes also affect the original graph, or if it is to create a
+    new copy of the original graph. 
+    """
+    
+    sub_nodes = list({y for x in edge_list for y in x[0:2]})
+    edge_list_no_data = [edge[0:2] for edge in edge_list]
+    
+    if ref_back:
+        G_sub = G.subgraph(sub_nodes)
+        for edge in G_sub.edges():
+            if edge not in edge_list_no_data:
+                G_sub.remove_edge(*edge)
+    else:
+        G_sub = G.subgraph(sub_nodes).copy()
+        for edge in G_sub.edges():
+            if edge not in edge_list_no_data:
+                G_sub.remove_edge(*edge)
+                
+    return G_sub
 
 def generate_graphs(nodes, query_edge_set=None, filters=None, conditions=None):
     """
@@ -145,7 +176,7 @@ def generate_graphs(nodes, query_edge_set=None, filters=None, conditions=None):
         conditions = []
 
     G = completeDiGraph(nodes)
-    
+
     filter_set = []
     # Build filters from dictionary
     for f, args in filters.items():
@@ -164,11 +195,14 @@ def generate_graphs(nodes, query_edge_set=None, filters=None, conditions=None):
     condition_set = []
 
     for f, args in conditions.items():
+        print(getattr(Conditions, f)(*args))
         condition_set.append(getattr(Conditions, f)(*args))
 
     graph_set = partialConditionalSubgraphs(G_sub,query_edge_set,condition_set)
 
-    return working_graphs
+    # working_graphs = list(graph_set)
+
+    return graph_set
 
 
 # def add_edge_attribute(graph,edge,attribute_name,attribute_value):
