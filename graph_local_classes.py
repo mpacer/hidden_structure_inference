@@ -71,12 +71,15 @@ class GraphParams(object):
     def to_dict(self):
         return {
             "n": self.n,
+            "names": self.names,
             "p": self.p,
+            "scale_free_bounds": (self.scale_free_lbound, self.scale_free_ubound),
+            "psi_shape": self.psi_shape,
+            "r_shape": self.r_shape,
             "lambda0": self.lambda0,
             "psi": self.psi,
             "r": self.r,
             "mu": self.mu
-            "names": self.names
         }
     
     @classmethod
