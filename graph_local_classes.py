@@ -118,10 +118,18 @@ class GraphParams(object):
                 raise AttributeError("no such attribute '{}'".format(param))
 
 class InnerGraphSimulation(object):
-    
-    def __init__(self, structure, params):
+    """
+    right now this only allows a single intervention at the beginning
+    what would be better is having an arbitrary set of interventions 
+    that can be added at any point during the process
+    """
+
+    def __init__(self, structure, params, init_node = None, init_time = 0.0):
         self.structure = structure
         self.params = params
+        if init_node is None:
+            self.init_node = self.structure.nodes[0]
+        self.init_time = init_time
         self._all_events = None
         self._first_events = None
         
@@ -144,7 +152,7 @@ class InnerGraphSimulation(object):
         return [(t, edge[1]) for t in event_times]
         
     def _sample(self, first_only=True, max_time=4.0):
-        pending = [(0, self.structure.nodes[0])]
+        pending = [(self.init_time, self.init_node)]
         self._all_events = []
         self._first_events = None
         if first_only:
