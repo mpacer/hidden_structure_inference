@@ -1,25 +1,8 @@
 import networkx as nx
 from filters import Filters
 from conditions import Conditions
-from networkx.readwrite import json_graph
 from utils import powerset
 from itertools import combinations
-
-# def clean_json_adj_load(file_name):
-#     with open(file_name) as d:
-#         json_data = json.load(d)
-#     H = json_graph.adjacency_graph(json_data)
-#     for edge_here in H.edges():
-#         del(H[edge_here[0]][edge_here[1]]["id"])
-#     return H
-
-# def clean_json_adj_loads(json_str):
-#     json_data = json.loads(json_str)
-#     H = json_graph.adjacency_graph(json_data)
-#     for edge_here in H.edges():
-#         del(H[edge_here[0]][edge_here[1]]["id"])
-#     return H
-
 
 def node_name_edge_picker_2_args(source_node_end,target_node_end,graph):
     f = lambda x: x[0].endswith(source_node_end) and x[1].endswith(target_node_end)
@@ -127,37 +110,7 @@ def set_graph_edge_types(graph,edge_list,edge_type):
             nx.set_edge_attributes(graph,"edge_type",{edge:edge_type})
     
 
-def subgraph_from_edges(G,edge_list,ref_back=True):
-    """
-    Creates a networkx graph that is a subgraph of G
-    defined by the list of edges in edge_list.
 
-    Requires G to be a networkx Graph or DiGraph
-    edge_list is a list of edges in either (u,v) or (u,v,d) form
-    where u and v are nodes comprising an edge, 
-    and d would be a dictionary of edge attributes
-
-    ref_back determines whether the created subgraph refers to back
-    to the original graph and therefore changes to the subgraph's 
-    attributes also affect the original graph, or if it is to create a
-    new copy of the original graph. 
-    """
-    
-    sub_nodes = list({y for x in edge_list for y in x[0:2]})
-    edge_list_no_data = [edge[0:2] for edge in edge_list]
-    
-    if ref_back:
-        G_sub = G.subgraph(sub_nodes)
-        for edge in G_sub.edges():
-            if edge not in edge_list_no_data:
-                G_sub.remove_edge(*edge)
-    else:
-        G_sub = G.subgraph(sub_nodes).copy()
-        for edge in G_sub.edges():
-            if edge not in edge_list_no_data:
-                G_sub.remove_edge(*edge)
-                
-    return G_sub
 
 def generate_graphs(nodes, query_edge_set=None, filters=None, conditions=None):
     """
@@ -195,12 +148,10 @@ def generate_graphs(nodes, query_edge_set=None, filters=None, conditions=None):
     condition_set = []
 
     for f, args in conditions.items():
-        print(getattr(Conditions, f)(*args))
         condition_set.append(getattr(Conditions, f)(*args))
 
     graph_set = partialConditionalSubgraphs(G_sub,query_edge_set,condition_set)
 
-    # working_graphs = list(graph_set)
 
     return graph_set
 
@@ -235,3 +186,20 @@ def generate_graphs(nodes, query_edge_set=None, filters=None, conditions=None):
     
 # def node_to_edge_semantics(graph):
 #     pass
+
+#from networkx.readwrite import json_graph
+
+# def clean_json_adj_load(file_name):
+#     with open(file_name) as d:
+#         json_data = json.load(d)
+#     H = json_graph.adjacency_graph(json_data)
+#     for edge_here in H.edges():
+#         del(H[edge_here[0]][edge_here[1]]["id"])
+#     return H
+
+# def clean_json_adj_loads(json_str):
+#     json_data = json.loads(json_str)
+#     H = json_graph.adjacency_graph(json_data)
+#     for edge_here in H.edges():
+#         del(H[edge_here[0]][edge_here[1]]["id"])
+#     return H
