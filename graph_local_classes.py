@@ -41,7 +41,8 @@ class GraphParams(object):
     
     def __init__(self, n, names = None, p=0.8, 
         scale_free_bounds = (.01,100),
-        psi_shape = 1.0, r_shape = 1.0):
+        psi_shape = 1.0, r_shape = 1.0,
+        lambda0 = None):
         self.n = n             # number of edges
         if names is None:
             self.names = tuple(range(n)) # names of edges
@@ -52,7 +53,7 @@ class GraphParams(object):
         self.scale_free_ubound = scale_free_bounds[1]
         self.psi_shape = psi_shape
         self.r_shape = r_shape
-        self.lambda0 = None    # scale-free parameter
+        self.lambda0 = lambda0    # scale-free base_rate parameter
         self.psi = None        # psi edge parameters
         self.r = None          # r edge parameters
         self.mu = None         # psi / r
@@ -68,10 +69,11 @@ class GraphParams(object):
         }
 
     def sample(self):
-        self.lambda0 = scale_free_sampler(
-            lower_bound=self.scale_free_lbound,
-            upper_bound=self.scale_free_ubound,
-            size=1)
+        if self.lambda0 is None:
+            self.lambda0 = scale_free_sampler(
+                lower_bound=self.scale_free_lbound,
+                upper_bound=self.scale_free_ubound,
+                size=1)
         self.psi = np.random.gamma(shape=1.0, scale=self.lambda0, size=self.n)
         self.r = np.random.gamma(shape=1.0, scale=self.lambda0, size=self.n)
         self.mu = self.psi / self.r
