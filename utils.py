@@ -1,6 +1,6 @@
 from itertools import chain, combinations
 import numpy as np
-
+import scipy
 
 def powerset(iterable):
 #    "powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)"
@@ -35,3 +35,40 @@ def scale_free_sampler(lower_bound = 1/10, upper_bound=10, size = 1):
     
     return list(np.exp(np.random.uniform(bottom_val,top_val, size)))
 
+def logmeanexp(arr, axis=0, b=None):
+    """Computes np.log(np.mean(np.exp(arr))) in a way that is tolerant 
+    to underflow
+
+    """
+    a_max = np.amax(arr, axis=axis, keepdims=True)
+    if a_max.ndim > 0:
+        a_max[~np.isfinite(a_max)] = 0
+    elif not np.isfinite(a_max):
+        a_max = 0
+    for idx,a in enumerate(arr):
+        try:
+            np.exp(a - a_max)
+        except FloatingPointError:
+            if arr[idx] < 0:
+                arr[idx]= -np.inf
+
+    return scipy.misc.logsumexp(arr, axis=axis, b=b) - np.log(arr.shape[axis])
+
+def mdp_logsumexp(arr, axis=0, b=None):
+    """Computes np.log(np.mean(np.exp(arr))) in a way that is tolerant 
+    to underflow
+
+    """
+    a_max = np.amax(arr, axis=axis, keepdims=True)
+    if a_max.ndim > 0:
+        a_max[~np.isfinite(a_max)] = 0
+    elif not np.isfinite(a_max):
+        a_max = 0
+    for idx,a in enumerate(arr):
+        try:
+            np.exp(a - a_max)
+        except FloatingPointError:
+            if arr[idx] < 0:
+                arr[idx]= -np.inf
+
+    return scipy.misc.logsumexp(arr, axis=axis, b=b)
