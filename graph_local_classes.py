@@ -157,6 +157,7 @@ class InnerGraphSimulation(object):
         pending = [(self.init_time, self.init_node)]
         self._all_events = []
         self._first_events = None
+        short_circuit = False
         if first_only:
             processed_nodes = []
 
@@ -170,8 +171,11 @@ class InnerGraphSimulation(object):
                 if node in processed_nodes:
                     continue
                 processed_nodes.append(node)
+                if sorted(processed_nodes)==sorted(self.structure.nodes):
+                    break
 
             children = self.structure.children(node)
+# this goes to each of the children of the node and initiates events along that edge
             for edge in children:
                 child_events = self.sample_edge(edge, time)
                 if len(child_events) == 0:
@@ -189,6 +193,11 @@ class InnerGraphSimulation(object):
             first_events[i] = self._sample(first_only=first_only, max_time=max_time)
         return first_events
     
+    def sample_iter(self, k=1, first_only=True, max_time=4.0):
+        for i in range(k):
+            first_events = self._sample(first_only=first_only, max_time=max_time)
+            yield first_events
+
     def _compute_first_events(self):
         first_events = {node: np.inf for node in self.structure.nodes}
         for time, node in self._all_events:
