@@ -1,5 +1,6 @@
-from graph_local_classes import *
 import networkx as nx
+
+from .graph_local_classes import GraphStructure, GraphParams
 
 def subgraph_from_edges(G,edge_list,ref_back=True):
     """
@@ -45,4 +46,3 @@ def sub_graph_sample(graph,edge_types=None,param_init=None):
     sub_graph_params.sample()
     
     return (sub_graph_struct,sub_graph_params)
-

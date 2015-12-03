@@ -1,8 +1,10 @@
 import networkx as nx
-from filters import Filters
-from conditions import Conditions
-from utils import powerset
 from itertools import combinations
+
+from .filters import Filters
+from .conditions import Conditions
+from .utils import powerset
+
 
 def node_name_edge_picker_2_args(source_node_end,target_node_end,graph):
     f = lambda x: x[0].endswith(source_node_end) and x[1].endswith(target_node_end)

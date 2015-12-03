@@ -1,6 +1,7 @@
 import numpy as np
 import networkx as nx
-from utils import scale_free_sampler
+
+from .utils import scale_free_sampler
 
 class GraphStructure(object):
     

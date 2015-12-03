@@ -1,5 +1,6 @@
 import networkx as nx
-from registry import Registry
+
+from .registry import Registry
 
 class Conditions(Registry):
     """
