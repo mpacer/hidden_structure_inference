@@ -118,17 +118,6 @@ def aux_data_monte_carlo_loglik(gs_in, gp_in, gs_out, gp_out, stigma_sample_size
 
     return logmeanexp(np.fromiter(sim_loglike,dtype=np.float,count=stigma_sample_size))
 
-def cond_to_data(cond):
-    a,b,c,d = cond
-    data_sequences = [
-        [a,b,c,d], 
-        [a,b,c,-np.inf], 
-        [a,b,-np.inf,d],
-        [a,b,-np.inf,-np.inf],
-        [a,-np.inf,-np.inf,-np.inf]
-    ]
-    return data_sequences
-
 def cross_entropy_loglik(data_sets,data_probs, k , aux_data, obs_dict):
     # for a finite set of known kinds of data with known probs
     # we can compute the expected cross-entropy for those kinds of data
