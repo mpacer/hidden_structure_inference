@@ -153,6 +153,26 @@ class InnerGraphSimulation(object):
         event_times = time + np.random.exponential(scale=self.params.r[index], size=num_events)
         event_times.sort()
         return [(t, edge[1]) for t in event_times]
+
+    def sample_edge_first_event_only(self, edge, time):
+        index = self.structure.edges.index(edge)
+        
+        # does it occur?
+        occurs = np.random.rand() < self.params.p
+        if not occurs:
+            return []
+        
+        # how many events?
+        num_events = np.random.poisson(lam=self.params.mu[index])
+        if num_events == 0:
+            return []
+        
+        # when do those events occur?
+        event_times = time + np.random.exponential(scale=self.params.r[index], size=num_events)
+        # event_times.sort()
+        # return [(t, edge[1]) for t in event_times]
+        return (np.amin(event_times), edge[1])
+
         
     def _sample(self, first_only=True, max_time=4.0):
         pending = [(self.init_time, self.init_node)]
@@ -187,6 +207,42 @@ class InnerGraphSimulation(object):
         self._all_events.sort()
         self._compute_first_events()
         return self._first_events
+
+    def _sample_solely_first_events(self, max_time=4.0):
+        first_only=True
+        pending = [(self.init_time, self.init_node)]
+        self._all_events = []
+        self._first_events = None
+        short_circuit = False
+        if first_only:
+            processed_nodes = []
+
+        while len(pending) > 0:
+            time, node = pending.pop(0)
+            if time >= max_time:
+                break
+
+            self._all_events.append((time, node))
+            if first_only:
+                if node in processed_nodes:
+                    continue
+                processed_nodes.append(node)
+                if sorted(processed_nodes)==sorted(self.structure.nodes):
+                    break
+
+            children = self.structure.children(node)
+# this goes to each of the children of the node and initiates events along that edge
+            for edge in children:
+                child_events = self.sample_edge_first_event_only(edge, time)
+                if len(child_events) == 0:
+                    continue
+                pending.extend(child_events)
+            pending.sort()
+            
+        self._all_events.sort()
+        self._compute_first_events()
+        return self._first_events
+
     
     def sample(self, k=1, first_only=True, max_time=4.0):
         first_events = np.empty((k, len(self.structure.nodes)))
@@ -198,6 +254,18 @@ class InnerGraphSimulation(object):
         for i in range(k):
             first_events = self._sample(first_only=first_only, max_time=max_time)
             yield first_events
+
+    def sample_solely_first_events(self, k=1, first_only=True, max_time=4.0):
+        first_events = np.empty((k, len(self.structure.nodes)))
+        for i in range(k):
+            first_events[i] = self._sample_solely_first_events(max_time=max_time)
+        return first_events
+    
+    def sample_iter_solely_first_events(self, k=1, first_only=True, max_time=4.0):
+        for i in range(k):
+            first_events = self._sample_solely_first_events(max_time=max_time)
+            yield first_events
+
 
     def _compute_first_events(self):
         first_events = {node: np.inf for node in self.structure.nodes}
