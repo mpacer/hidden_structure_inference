@@ -123,21 +123,24 @@ class Inference(object):
     def cross_entropy_loglik(self, data_sets,data_probs, k , aux_data, obs_dict):
         # for a finite set of known kinds of data with known probs
         # we can compute the expected cross-entropy for those kinds of data
-        return np.sum([data_probs[i]*k*self.multi_edge_loglik(obs_data[1:], aux_data[1:], obs_dict) for i,obs_data in enumerate(data_sets)])
+        return np.sum([data_probs[i]*k*self.multi_edge_loglik(obs_data, aux_data, obs_dict) for i,obs_data in enumerate(data_sets)])
     
 
     def multi_edge_loglik(self, obs_data,aux_data,parameters):
+        # return np.sum([self.one_edge_loglik(aux_data[i+1],obs_data[i+1],parameters['psi'][i+1],parameters['r'][i+1]) for i in range(len(aux_data)-1)]) 
+        
         # special casing for my problem, this needs to be made more general
         # extract non-intervention nodes as we know when the intervention node occurred
-        # non_int_node_idx = slice(1,4)
-        # obs_data = obs_data[non_int_node_idx]
-        # aux_data = aux_data[non_int_node_idx]
-        # grab = ['psi','r']
-        # local_dict = {i:parameters[i][1:] for i in parameters if i in grab}
-        # end special casing
+        non_int_node_idx = slice(1,4)
+        obs_data = obs_data[non_int_node_idx]
+        aux_data = aux_data[non_int_node_idx]
+        grab = ['psi','r']
+        local_dict = {i:parameters[i][1:] for i in parameters if i in grab}
+        # # end special casing
 
-        # loglik of data set is the sum of the loglikelihoods of the individual data points (they're independent)
-        return np.sum([self.one_edge_loglik(aux_data[i],obs_data[i],parameters['psi'][i+1],parameters['r'][i+1]) for i in range(len(aux_data))]) 
+        # # loglik of data set is the sum of the loglikelihoods of the individual data points (they're independent)
+        
+        return np.sum([self.one_edge_loglik(aux_data[i],obs_data[i],local_dict['psi'][i],local_dict['r'][i]) for i in range(len(aux_data))]) 
 
     def one_edge_loglik(self, cause_time, effect_time, psi, r, T=4.0):
         # if the cause never occurs it occurs at infinity
