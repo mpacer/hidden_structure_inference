@@ -4,5 +4,4 @@ __pycache__/
 temp_test.py
 run_simulation.py.lprof
 lib/__init__.pyc
-lib/__pycache__/likelihood_calculations.cpython-35.pyc
-lib/__pycache__/config.cpython-35.pyc
+lib/__pycache__/
