@@ -35,7 +35,7 @@ class Inference(object):
             delayed(self.parameters_monte_carlo_loglik)(graph,
                 param_sample_size,options=options) for graph in self.graphs)
         
-        import ipdb; ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         # time_vec = np.empty([len(self.graphs),2])
         # for i,graph in enumerate(self.graphs):
         
@@ -137,7 +137,7 @@ class Inference(object):
         # end special casing
 
         # loglik of data set is the sum of the loglikelihoods of the individual data points (they're independent)
-        return np.sum([self.one_edge_loglik(aux_data[i],obs_data[i],local_dict['psi'][i],local_dict['r'][i]) for i in range(len(aux_data))]) 
+        return np.sum([self.one_edge_loglik(aux_data[i],obs_data[i],parameters['psi'][i+1],parameters['r'][i+1]) for i in range(len(aux_data))]) 
 
     def one_edge_loglik(self, cause_time, effect_time, psi, r, T=4.0):
         # if the cause never occurs it occurs at infinity
