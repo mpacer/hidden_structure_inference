@@ -4,9 +4,12 @@ from lib.graph_enumerator import generate_graphs
 from lib.node_semantics import Node_Name_Rule, Edge_Semantics_Rule
 from lib import config, result_config
 from lib.likelihood_calculations import Inference
+import time
+
 
 
 def main():
+    t1 = time.time()
     graph_iter = generate_graphs(**config.generator_dictionary)
     graphs = list(graph_iter)
     for graph in graphs:    
@@ -22,6 +25,8 @@ def main():
         for edge in edges_of_interest:
             if edge in g.edges():
                 edges_of_interest[edge]+=result_posterior[idx]
+    elapsed= time.time() - t1
+    print(elapsed)
 
 if __name__ == "__main__":
     main()

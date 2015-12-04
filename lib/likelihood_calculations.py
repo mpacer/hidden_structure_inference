@@ -1,6 +1,8 @@
 import numpy as np
 import networkx as nx
 import sys
+import time
+from joblib import Parallel, delayed
 
 from .subgraph_functions import sub_graph_sample
 from .sparseprior import log_sparse_graphset_prior 
@@ -11,6 +13,7 @@ class Inference(object):
 
     def __init__(self):
         self.graphs = None
+
 
     def p_graph_given_d(self,graphs,options):
         # sets a catch for all numerical warnings to be treated as errors
@@ -25,17 +28,23 @@ class Inference(object):
         num_data_samps: number of samples of observed data to be considered in the liklihood
         """
         self.graphs = graphs
-        loglikelihood = np.empty(len(self.graphs))
+        # loglikelihood = np.empty(len(self.graphs))
         param_sample_size= options["param_sample_size"]
         
-        for i,graph in enumerate(self.graphs):
-            loglikelihood[i] = self.parameters_monte_carlo_loglik(graph,param_sample_size,options=options)
-            # prints progres at roughly every 10% of progress
-            # import ipdb; ipdb.set_trace()
-            if i in [int(np.floor(j*len(self.graphs))) for j in np.arange(0,1,.05)]:
-                sys.stdout.write("{:.2%} ".format(i/len(self.graphs)))
-                sys.stdout.flush()
+        loglikelihood = Parallel(n_jobs=8, backend="multiprocessing")(
+            delayed(self.parameters_monte_carlo_loglik)(graph,
+                param_sample_size,options=options) for graph in self.graphs)
         
+        import ipdb; ipdb.set_trace()
+        # time_vec = np.empty([len(self.graphs),2])
+        # for i,graph in enumerate(self.graphs):
+        
+        #     loglikelihood[i] = self.parameters_monte_carlo_loglik(graph,param_sample_size,options=options)
+        
+            # if i in [int(np.floor(j*len(self.graphs))) for j in np.arange(0,1,.1)]:
+            #     sys.stdout.write("{:.2%} ".format(i/len(self.graphs)))
+            #     sys.stdout.flush()
+        # import ipdb; ipdb.set_trace()
         sparsity = options["sparsity"]
         logposterior = self.logposterior_from_loglik_logsparseprior(loglikelihood,sparsity)
     #     import ipdb; ipdb.set_trace()
@@ -86,6 +95,7 @@ class Inference(object):
         inner_simul = InnerGraphSimulation(gs_in,gp_in)
         return inner_simul.sample_iter(M)
 
+
     def aux_data_monte_carlo_loglik(self, gs_in, gp_in, gs_out, gp_out, stigma_sample_size, options=None):
         stigma_sample_size = options["stigma_sample_size"]
     #     inner_samp = gen_simulations(gs_in, gp_in, stigma_sample_size)
@@ -109,19 +119,21 @@ class Inference(object):
 
         return logmeanexp(np.fromiter(sim_loglike,dtype=np.float,count=stigma_sample_size))
 
+
     def cross_entropy_loglik(self, data_sets,data_probs, k , aux_data, obs_dict):
         # for a finite set of known kinds of data with known probs
         # we can compute the expected cross-entropy for those kinds of data
-        return np.sum([data_probs[i]*k*self.multi_edge_loglik(obs_data, aux_data, obs_dict) for i,obs_data in enumerate(data_sets)])
+        return np.sum([data_probs[i]*k*self.multi_edge_loglik(obs_data[1:], aux_data[1:], obs_dict) for i,obs_data in enumerate(data_sets)])
+    
 
     def multi_edge_loglik(self, obs_data,aux_data,parameters):
         # special casing for my problem, this needs to be made more general
         # extract non-intervention nodes as we know when the intervention node occurred
-        non_int_node_idx = slice(1,4)
-        obs_data = obs_data[non_int_node_idx]
-        aux_data = aux_data[non_int_node_idx]
-        grab = ['psi','r']
-        local_dict = {i:parameters[i][non_int_node_idx] for i in parameters if i in grab}
+        # non_int_node_idx = slice(1,4)
+        # obs_data = obs_data[non_int_node_idx]
+        # aux_data = aux_data[non_int_node_idx]
+        # grab = ['psi','r']
+        # local_dict = {i:parameters[i][1:] for i in parameters if i in grab}
         # end special casing
 
         # loglik of data set is the sum of the loglikelihoods of the individual data points (they're independent)
