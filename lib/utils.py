@@ -1,4 +1,5 @@
 import numpy as np
+from datetime import datetime
 from itertools import chain, combinations
 from scipy.misc import logsumexp
 
@@ -9,6 +10,12 @@ def powerset(iterable):
     len_powerset = 0
     powerset_vals = chain.from_iterable(combinations(s, r) for r in range(len(s)+1))
     return powerset_vals
+
+def filename_utility(inputName, file_format = ".npz"):
+    if file_format[0]!=".":
+        return str(inputName)+"_{}".format(datetime.today().strftime("%Y_%V_%u_%H%M")) + "." + str(file_format)
+    return str(inputName)+"_{}".format(datetime.today().strftime("%Y_%V_%u_%H%M")) + str(file_format)
+
 
 def scale_free_sampler(lower_bound = 1/10, upper_bound=10, size = 1):
     """

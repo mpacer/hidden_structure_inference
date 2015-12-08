@@ -10,3 +10,4 @@ def cond_to_data(cond):
         [a,-np.inf,-np.inf,-np.inf]
     ]
     return data_sequences
+
