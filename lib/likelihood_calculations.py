@@ -47,7 +47,7 @@ class Inference(object):
         # import ipdb; ipdb.set_trace()
         sparsity = options["sparsity"]
         logposterior = self.logposterior_from_loglik_logsparseprior(loglikelihood,sparsity)
-    #     import ipdb; ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         return graphs,np.exp(logposterior),loglikelihood,options
 
     def logposterior_from_loglik_logsparseprior(self,loglik,sparsity=.5):
@@ -96,10 +96,17 @@ class Inference(object):
         return inner_simul.sample_iter(M)
 
 
+    def gen_iter_simulations_first_only(self, gs_in,gp_in,M):
+        # builds a simulation object and then samples returning an M lengthed generator
+        inner_simul = InnerGraphSimulation(gs_in,gp_in)
+        return inner_simul.sample_iter_solely_first_events(M)
+
+
     def aux_data_monte_carlo_loglik(self, gs_in, gp_in, gs_out, gp_out, stigma_sample_size, options=None):
         stigma_sample_size = options["stigma_sample_size"]
-    #     inner_samp = gen_simulations(gs_in, gp_in, stigma_sample_size)
-        inner_samp = self.gen_iter_simulations(gs_in, gp_in, stigma_sample_size)
+        # inner_samp = gen_simulations(gs_in, gp_in, stigma_sample_size)
+        # inner_samp = self.gen_iter_simulations(gs_in, gp_in, stigma_sample_size)
+        inner_samp = self.gen_iter_simulations_first_only(gs_in, gp_in, stigma_sample_size)
         
         # get arguments to the loglikelihood 
         # data_sets are kinds of data
