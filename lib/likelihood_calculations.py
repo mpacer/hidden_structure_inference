@@ -31,7 +31,7 @@ class Inference(object):
         # loglikelihood = np.empty(len(self.graphs))
         param_sample_size= options["param_sample_size"]
         
-        loglikelihood = Parallel(n_jobs=8, backend="multiprocessing")(
+        loglikelihood = Parallel(n_jobs=-1, backend="multiprocessing")(
             delayed(self.parameters_monte_carlo_loglik)(graph,
                 param_sample_size,options=options) for graph in self.graphs)
         
