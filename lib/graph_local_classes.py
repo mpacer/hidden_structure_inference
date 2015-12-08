@@ -171,7 +171,7 @@ class InnerGraphSimulation(object):
         event_times = time + np.random.exponential(scale=self.params.r[index], size=num_events)
         # event_times.sort()
         # return [(t, edge[1]) for t in event_times]
-        return (np.amin(event_times), edge[1])
+        return [(np.amin(event_times), edge[1])]
 
         
     def _sample(self, first_only=True, max_time=4.0):
@@ -237,6 +237,7 @@ class InnerGraphSimulation(object):
                 if len(child_events) == 0:
                     continue
                 pending.extend(child_events)
+            # import ipdb; ipdb.set_trace()
             pending.sort()
             
         self._all_events.sort()
