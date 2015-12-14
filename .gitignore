@@ -5,3 +5,11 @@ temp_test.py
 run_simulation.py.lprof
 lib/__init__.pyc
 lib/__pycache__/
+sync_results.sh
+results/data_2015_49_4_1132.pkl
+results/hidden_structure_results_2015_50_1_1520.npz
+results/hidden_structure_results_2015_51_1_1218.npz
+results/test_file.txt
+results/test_json.json
+stack_overflow_notes/
+

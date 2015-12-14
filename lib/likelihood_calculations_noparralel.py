@@ -44,10 +44,10 @@ class Inference(object):
             # if i in [int(np.floor(j*len(self.graphs))) for j in np.arange(0,1,.1)]:
             #     sys.stdout.write("{:.2%} ".format(i/len(self.graphs)))
             #     sys.stdout.flush()
-        # import ipdb; ipdb.set_trace()
+        import ipdb; ipdb.set_trace()
         sparsity = options["sparsity"]
         logposterior = self.logposterior_from_loglik_logsparseprior(loglikelihood,sparsity)
-    #     import ipdb; ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         return graphs,np.exp(logposterior),loglikelihood,options
 
     def logposterior_from_loglik_logsparseprior(self,loglik,sparsity=.5):
