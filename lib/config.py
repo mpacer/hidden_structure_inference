@@ -76,18 +76,19 @@ edge_semantics={
     }
 }
 
-param_sample_size = 20
-stigma_sample_size = 5
-scale_free_bounds = (10**-.25,10**.25)
+param_sample_size = 80
+stigma_sample_size = 100
+scale_free_bounds = (10**(-.1),10**(.1))
+# scale_free_bounds = (10**(-.25),10**(.25))
 # scale_free_bounds = (10**-1,10**1)
-# scale_free_bounds = (10**-3,10**3)
+# scale_free_bounds = (10**-4,10**4)
 
 cond1 = [0,0,0,0]
 cond2 = [0,1,3,2]
 cond3 = [0,3,2,1]
 cond4 = [0,1,2,2]
 data_sets = cond_to_data(cond2)
-sparsity = .1
+sparsity = .5
 
 options = {
     'param_sample_size': param_sample_size,

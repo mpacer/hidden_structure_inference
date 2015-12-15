@@ -6,6 +6,7 @@ run_simulation.py.lprof
 lib/__init__.pyc
 lib/__pycache__/
 sync_results.sh
+results
 results/data_2015_49_4_1132.pkl
 results/hidden_structure_results_2015_50_1_1520.npz
 results/hidden_structure_results_2015_51_1_1218.npz
