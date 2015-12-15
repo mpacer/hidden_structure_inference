@@ -168,10 +168,10 @@ class InnerGraphSimulation(object):
             return []
         
         # when do those events occur?
-        event_times = time + np.random.exponential(scale=self.params.r[index], size=num_events)
+        event_time = time + np.random.exponential(scale=self.params.r[index]/num_events, size=1)
         # event_times.sort()
         # return [(t, edge[1]) for t in event_times]
-        return [(np.amin(event_times), edge[1])]
+        return [(event_time, edge[1])]
 
         
     def _sample(self, first_only=True, max_time=4.0):
