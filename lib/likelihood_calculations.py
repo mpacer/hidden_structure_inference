@@ -17,7 +17,9 @@ class Inference(object):
 
     def p_graph_given_d(self,graphs,options):
         # sets a catch for all numerical warnings to be treated as errors
-        np.seterr(all='raise')
+        # np.seterr(all='raise')
+        # np.seterr(under='raise')
+        np.seterr(over='raise')
         """
         options includes 
         sparsity: the sparsity argument for the prior 
@@ -46,7 +48,7 @@ class Inference(object):
             #     sys.stdout.flush()
         # import ipdb; ipdb.set_trace()
         sparsity = options["sparsity"]
-        logposterior = self.logposterior_from_loglik_logsparseprior(loglikelihood,sparsity)
+        logposterior = self.logposterior_from_loglik_logsparseprior(loglikelihood,sparsity=sparsity)
         # import ipdb; ipdb.set_trace()
         return graphs,np.exp(logposterior),loglikelihood,options
 
@@ -171,7 +173,7 @@ class Inference(object):
                 except FloatingPointError:
                     # it was a really small number, set it to 0
                     exp_val = 0         
-                return (psi/r)*(1-exp_val)
+                return -(psi/r)*(1-exp_val)
             
             # if the effect occurred but before the cause_time, that's impossible
             elif effect_time < cause_time: 
@@ -186,4 +188,4 @@ class Inference(object):
                     # it was a really small number, set it to 0
                     exp_val = 0         
 
-                return np.log(psi) - (r*(effect_time-cause_time)) + (psi/r)*(1-exp_val)
+                return np.log(psi) - (r*(effect_time-cause_time)) - (psi/r)*(1-exp_val)
