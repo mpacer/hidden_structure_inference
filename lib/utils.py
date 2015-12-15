@@ -57,6 +57,7 @@ def logmeanexp(arr, axis=0, b=None):
         try:
             np.exp(a - a_max)
         except FloatingPointError:
+            print("{} is value {} is max {} is value".format(a,a_max,arr[idx]))
             if arr[idx] < 0:
                 arr[idx]= -np.inf
 
@@ -76,6 +77,7 @@ def mdp_logsumexp(arr, axis=0, b=None):
         try:
             np.exp(a - a_max)
         except FloatingPointError:
+            print("{} is value {} is max {} is value".format(a,a_max,arr[idx]))
             if arr[idx] < 0:
                 arr[idx]= -np.inf
 
