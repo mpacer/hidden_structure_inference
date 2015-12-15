@@ -171,7 +171,7 @@ class Inference(object):
                 except FloatingPointError:
                     # it was a really small number, set it to 0
                     exp_val = 0         
-                return -(psi/r)*(1-exp_val)
+                return (psi/r)*(1-exp_val)
             
             # if the effect occurred but before the cause_time, that's impossible
             elif effect_time < cause_time: 
@@ -186,4 +186,4 @@ class Inference(object):
                     # it was a really small number, set it to 0
                     exp_val = 0         
 
-                return np.log(psi) - (r*(effect_time-cause_time)) - (psi/r)*(1-exp_val)
+                return np.log(psi) - (r*(effect_time-cause_time)) + (psi/r)*(1-exp_val)
