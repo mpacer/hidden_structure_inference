@@ -48,18 +48,18 @@ def logmeanexp(arr, axis=0, b=None):
     to underflow, using scipy.misc.logsumexp.
 
     """
-    a_max = np.amax(arr, axis=axis, keepdims=True)
-    if a_max.ndim > 0:
-        a_max[~np.isfinite(a_max)] = 0
-    elif not np.isfinite(a_max):
-        a_max = 0
-    for idx,a in enumerate(arr):
-        try:
-            np.exp(a - a_max)
-        except FloatingPointError:
-            print("{} is value {} is max {} is value".format(a,a_max,arr[idx]))
-            if arr[idx] < 0:
-                arr[idx]= -np.inf
+    # a_max = np.amax(arr, axis=axis, keepdims=True)
+    # if a_max.ndim > 0:
+    #     a_max[~np.isfinite(a_max)] = 0
+    # elif not np.isfinite(a_max):
+    #     a_max = 0
+    # for idx,a in enumerate(arr):
+    #     try:
+    #         np.exp(a - a_max)
+    #     except FloatingPointError:
+    #         print("{} is value {} is max {} is value".format(a,a_max,arr[idx]))
+    #         if arr[idx] < 0:
+    #             arr[idx]= -np.inf
 
     return logsumexp(arr, axis=axis, b=b) - np.log(arr.shape[axis])
 
@@ -68,18 +68,18 @@ def mdp_logsumexp(arr, axis=0, b=None):
     tolerant to underflow than the original logsumexp function in scipy
 
     """
-    a_max = np.amax(arr, axis=axis, keepdims=True)
-    if a_max.ndim > 0:
-        a_max[~np.isfinite(a_max)] = 0
-    elif not np.isfinite(a_max):
-        a_max = 0
-    for idx,a in enumerate(arr):
-        try:
-            np.exp(a - a_max)
-        except FloatingPointError:
-            print("{} is value {} is max {} is value".format(a,a_max,arr[idx]))
-            if arr[idx] < 0:
-                arr[idx]= -np.inf
+    # a_max = np.amax(arr, axis=axis, keepdims=True)
+    # if a_max.ndim > 0:
+    #     a_max[~np.isfinite(a_max)] = 0
+    # elif not np.isfinite(a_max):
+    #     a_max = 0
+    # for idx,a in enumerate(arr):
+    #     try:
+    #         np.exp(a - a_max)
+    #     except FloatingPointError:
+    #         print("{} is value {} is max {} is value".format(a,a_max,arr[idx]))
+    #         if arr[idx] < 0:
+    #             arr[idx]= -np.inf
 
     return logsumexp(arr, axis=axis, b=b)
 
