@@ -14,14 +14,14 @@ class Inference(object):
     def __init__(self):
         self.graphs = None
 
-    def parameter_sampler(self,graphs,options):
-        # expects top_graph to be the first in the list of graphs
-        top_graph = graphs[0]
-        param_sample_size= options["param_sample_size"]
-        init_dict = {"scale_free_bounds":options["scale_free_bounds"]}
-        local_g = GraphParams.from_networkx(top_graph)
-        # i want to get back some kind of object that i can then iterate 
-        # through on a per graph basis
+    # def parameter_sampler(self,graphs,options):
+    #     # expects top_graph to be the first in the list of graphs
+    #     top_graph = graphs[0]
+    #     param_sample_size= options["param_sample_size"]
+    #     init_dict = {"scale_free_bounds":options["scale_free_bounds"]}
+    #     local_g = GraphParams.from_networkx(top_graph)
+    #     # i want to get back some kind of object that i can then iterate 
+    #     # through on a per graph basis
 
 
     def p_graph_given_d(self,graphs,options):
@@ -41,23 +41,22 @@ class Inference(object):
         self.graphs = graphs
         num_graphs = len(graphs)
         # loglikelihood = np.empty(len(self.graphs))
-        param_sample_size= options["param_sample_size"]
+        num_params= options["param_sample_size"]
 
         # generate 1 complete graph with many data structures shared beneath it
 
-        num_params = 1
         loglikelihood_by_param = np.zeros(size = (num_params,num_graphs))
 
         for i in range(num_params):
             # loglikelihood = Parallel(n_jobs=-1, backend="multiprocessing")(
-            #     delayed(self.parameters_monte_carlo_loglik)(graph,
-            #         options=options) for graph in self.graphs)
+            #     delayed(self.parameters_monte_carlo_loglik)(graph, 
+            #         param_sample_size,options=options) for graph in self.graphs)
             max_graph_params = None # fix this when you can
             loglikelihood_by_param[i,:] = Parallel(n_jobs=-1, backend="multiprocessing")(
                 delayed(self.subgraph_loglik)(graph, max_graph_params,
                     options=options) for graph in self.graphs)
         
-        loglikelihood = logmeanexp(np.fromiter())
+        loglikelihood = logmeanexp(loglikelihood_by_param,axis=0)
         # import ipdb; ipdb.set_trace()
         # time_vec = np.empty([len(self.graphs),2])
         # for i,graph in enumerate(self.graphs):
@@ -86,7 +85,7 @@ class Inference(object):
         gp_out = max_graph_params(gp_out.edges)
 
 
-        yield self.aux_data_monte_carlo_loglik(gs_in,gp_in,gs_out,gp_out,
+        return self.aux_data_monte_carlo_loglik(gs_in,gp_in,gs_out,gp_out,
             stigma_sample_size,options=options)
 
 
