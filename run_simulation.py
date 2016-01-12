@@ -4,7 +4,7 @@ import os
 from lib.graph_enumerator import generate_graphs
 from lib.node_semantics import Node_Name_Rule, Edge_Semantics_Rule
 from lib import config, result_config
-from lib.likelihood_calculations import Inference
+from lib.likelihood_calculations_shared_params import Inference
 from lib.utils import filename_utility
 import time
 

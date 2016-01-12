@@ -85,7 +85,7 @@ class Inference(object):
         gs_out = GraphStructure.from_networkx(sub_graph_from_edge_type(graph,
             edge_types=["observed"]))
         gp_in = max_graph_params.subgraph_copy(gs_in.edges)
-        gp_out = max_graph_params.subgraph_copy(gp_out.edges)
+        gp_out = max_graph_params.subgraph_copy(gs_out.edges)
 
 
         return self.aux_data_monte_carlo_loglik(gs_in,gp_in,gs_out,gp_out,
