@@ -20,7 +20,8 @@ def subgraph_from_edges(G,edge_list,ref_back=True):
     
     sub_nodes = list({y for x in edge_list for y in x[0:2]})
     edge_list_no_data = [edge[0:2] for edge in edge_list]
-    
+    assert all([e in G.edges() for e in edge_list_no_data])
+
     if ref_back:
         G_sub = G.subgraph(sub_nodes)
         for edge in G_sub.edges():
