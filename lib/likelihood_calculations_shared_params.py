@@ -96,7 +96,7 @@ class Inference(object):
     def logposterior_from_loglik_logsparseprior(self,loglik,sparsity=.5):
         logp = log_sparse_graphset_prior(self.graphs,sparsity=sparsity)
         unnormed_logposterior = loglik+logp
-        return unnormed_logposterior - np.logsumexp(unnormed_logposterior)
+        return unnormed_logposterior - logsumexp(unnormed_logposterior)
 
     # def parameters_monte_carlo_loglik(self, graph, param_sample_size, options = None):
     #     # initialize the dictionary with the scale_free_bounds specified in the options
