@@ -61,6 +61,7 @@ class Inference(object):
         # loglikelihood_by_param[i,:] = Parallel(n_jobs=-1, backend="multiprocessing")(
         #     delayed(self.subgraph_loglik)(graph, max_graph_params,
         #         options=options) for graph in self.graphs)
+
         
         loglikelihood = logmeanexp(loglikelihood_by_param,axis=0)
         # import ipdb; ipdb.set_trace()
