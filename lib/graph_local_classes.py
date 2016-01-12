@@ -123,7 +123,7 @@ class GraphParams(object):
     def subgraph_copy(self,edge_list):
         tmp_gp = self.copy()
         match_idx = two_list_match_indices(edge_list,tmp_gp.names)
-        import ipdb; ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         assert sorted([tuple(x) for x in np.array(self.names)[match_idx]]) == sorted(edge_list)
         tmp_gp.n = len(edge_list)
         tmp_gp.names = sorted(edge_list)

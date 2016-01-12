@@ -40,6 +40,7 @@ class Inference(object):
         """
         self.graphs = graphs
         self.max_graph = self.graphs[0]
+        self.options = options
         num_graphs = len(graphs)
         # loglikelihood = np.empty(len(self.graphs))
         num_params= options["param_sample_size"]
@@ -53,6 +54,7 @@ class Inference(object):
             #     delayed(self.parameters_monte_carlo_loglik)(graph, 
             #         param_sample_size,options=options) for graph in self.graphs)
             max_graph_params = GraphParams.from_networkx(self.max_graph) # fix this when you can
+            max_graph_params.sample()
             loglikelihood_by_param[i,:] = Parallel(n_jobs=-1, backend="multiprocessing")(
                 delayed(self.subgraph_loglik)(graph, max_graph_params,
                     options=options) for graph in self.graphs)
