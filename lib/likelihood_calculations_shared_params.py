@@ -57,6 +57,7 @@ class Inference(object):
                 delayed(self.subgraph_loglik)(graph, max_graph_params,
                     options=options) for graph in self.graphs)
         
+        loglikelihood = logmeanexp(np.fromiter())
         # import ipdb; ipdb.set_trace()
         # time_vec = np.empty([len(self.graphs),2])
         # for i,graph in enumerate(self.graphs):
@@ -73,8 +74,20 @@ class Inference(object):
         return graphs,np.exp(logposterior),loglikelihood,options
 
     def subgraph_loglik(self,graph,max_graph_params,options = None):
-        sub_graph_params = max_graph_params.subgraph_copy(edges())
+        # sub_graph_params = max_graph_params.subgraph_copy(graph.edges())
 
+        stigma_sample_size = options["stigma_sample_size"]
+
+        gs_in = GraphStructure.from_networkx(sub_graph_from_edge_type(graph,
+            edge_types=["hidden_sample"]))
+        gs_out = GraphStructure.from_networkx(sub_graph_from_edge_type(graph,
+            edge_types=["observed"]))
+        gp_in = max_graph_params(gs_in.edges)
+        gp_out = max_graph_params(gp_out.edges)
+
+
+        yield self.aux_data_monte_carlo_loglik(gs_in,gp_in,gs_out,gp_out,
+            stigma_sample_size,options=options)
 
 
     def logposterior_from_loglik_logsparseprior(self,loglik,sparsity=.5):
@@ -90,9 +103,9 @@ class Inference(object):
     #     init_dict["lambda0"]=gp_in.to_dict()["lambda0"]
     #     gs_out, gp_out = sub_graph_sample(graph, edge_types=['observed'], param_init=init_dict)
         
-    #     param_samples = self._helper_iter_param_sampler(gs_in,gp_in,gs_out,gp_out,param_sample_size,options)
+    #     param_sample_logliks = self._helper_iter_param_sampler(gs_in,gp_in,gs_out,gp_out,param_sample_size,options)
         
-    #     return logmeanexp(np.fromiter(param_samples,dtype=np.float,count=param_sample_size))
+    #     return logmeanexp(np.fromiter(param_sample_logliks,dtype=np.float,count=param_sample_size))
 
     # def _helper_iter_param_sampler(self, gs_in,gp_in,gs_out,gp_out,param_sample_size,options):
     #     # a helper function for sampling parameters in inner graph 
@@ -121,7 +134,6 @@ class Inference(object):
         # builds a simulation object and then samples returning an M lengthed generator
         inner_simul = InnerGraphSimulation(gs_in,gp_in)
         return inner_simul.sample_iter(M)
-
 
     def gen_iter_simulations_first_only(self, gs_in,gp_in,M):
         # builds a simulation object and then samples returning an M lengthed generator
