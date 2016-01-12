@@ -4,9 +4,9 @@ import sys
 import time
 from joblib import Parallel, delayed
 
-from .subgraph_functions import sub_graph_sample
+from .subgraph_functions import sub_graph_sample, sub_graph_from_edge_type
 from .sparseprior import log_sparse_graphset_prior 
-from .graph_local_classes import InnerGraphSimulation, GraphParams
+from .graph_local_classes import InnerGraphSimulation, GraphParams, GraphStructure
 from .utils import logmeanexp, mdp_logsumexp
 
 class Inference(object):
@@ -39,19 +39,20 @@ class Inference(object):
         num_data_samps: number of samples of observed data to be considered in the liklihood
         """
         self.graphs = graphs
+        self.max_graph = self.graphs[0]
         num_graphs = len(graphs)
         # loglikelihood = np.empty(len(self.graphs))
         num_params= options["param_sample_size"]
 
         # generate 1 complete graph with many data structures shared beneath it
 
-        loglikelihood_by_param = np.zeros(size = (num_params,num_graphs))
+        loglikelihood_by_param = np.zeros(shape = (num_params,num_graphs))
 
         for i in range(num_params):
             # loglikelihood = Parallel(n_jobs=-1, backend="multiprocessing")(
             #     delayed(self.parameters_monte_carlo_loglik)(graph, 
             #         param_sample_size,options=options) for graph in self.graphs)
-            max_graph_params = None # fix this when you can
+            max_graph_params = GraphParams.from_networkx(self.max_graph) # fix this when you can
             loglikelihood_by_param[i,:] = Parallel(n_jobs=-1, backend="multiprocessing")(
                 delayed(self.subgraph_loglik)(graph, max_graph_params,
                     options=options) for graph in self.graphs)
@@ -81,8 +82,8 @@ class Inference(object):
             edge_types=["hidden_sample"]))
         gs_out = GraphStructure.from_networkx(sub_graph_from_edge_type(graph,
             edge_types=["observed"]))
-        gp_in = max_graph_params(gs_in.edges)
-        gp_out = max_graph_params(gp_out.edges)
+        gp_in = max_graph_params.subgraph_copy(gs_in.edges)
+        gp_out = max_graph_params.subgraph_copy(gp_out.edges)
 
 
         return self.aux_data_monte_carlo_loglik(gs_in,gp_in,gs_out,gp_out,
