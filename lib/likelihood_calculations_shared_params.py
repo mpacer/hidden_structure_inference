@@ -23,6 +23,7 @@ class Inference(object):
         # i want to get back some kind of object that i can then iterate 
         # through on a per graph basis
 
+
     def p_graph_given_d(self,graphs,options):
         # sets a catch for all numerical warnings to be treated as errors
         # np.seterr(all='raise')
@@ -38,24 +39,43 @@ class Inference(object):
         num_data_samps: number of samples of observed data to be considered in the liklihood
         """
         self.graphs = graphs
+        num_graphs = len(graphs)
         # loglikelihood = np.empty(len(self.graphs))
         param_sample_size= options["param_sample_size"]
+
+        # generate 1 complete graph with many data structures shared beneath it
+
+        num_params = 1
+        loglikelihood_by_param = np.zeros(size = (num_params,num_graphs))
+
+        for i in range(num_params):
+            # loglikelihood = Parallel(n_jobs=-1, backend="multiprocessing")(
+            #     delayed(self.parameters_monte_carlo_loglik)(graph,
+            #         options=options) for graph in self.graphs)
+            max_graph_params = None # fix this when you can
+            loglikelihood_by_param[i,:] = Parallel(n_jobs=-1, backend="multiprocessing")(
+                delayed(self.subgraph_loglik)(graph, max_graph_params,
+                    options=options) for graph in self.graphs)
         
-        loglikelihood = Parallel(n_jobs=-1, backend="multiprocessing")(
-            delayed(self.parameters_monte_carlo_loglik)(graph,
-                param_sample_size,options=options) for graph in self.graphs)
-        
+        # import ipdb; ipdb.set_trace()
         # time_vec = np.empty([len(self.graphs),2])
         # for i,graph in enumerate(self.graphs):
+        
         #     loglikelihood[i] = self.parameters_monte_carlo_loglik(graph,param_sample_size,options=options)
+        
             # if i in [int(np.floor(j*len(self.graphs))) for j in np.arange(0,1,.1)]:
             #     sys.stdout.write("{:.2%} ".format(i/len(self.graphs)))
             #     sys.stdout.flush()
-        
+        # import ipdb; ipdb.set_trace()
         sparsity = options["sparsity"]
         logposterior = self.logposterior_from_loglik_logsparseprior(loglikelihood,sparsity=sparsity)
-        
+        # import ipdb; ipdb.set_trace()
         return graphs,np.exp(logposterior),loglikelihood,options
+
+    def subgraph_loglik(self,graph,max_graph_params,options = None):
+        sub_graph_params = max_graph_params.subgraph_copy(edges())
+
+
 
     def logposterior_from_loglik_logsparseprior(self,loglik,sparsity=.5):
         logp = log_sparse_graphset_prior(self.graphs,sparsity=sparsity)
