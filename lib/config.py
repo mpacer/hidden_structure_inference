@@ -1,5 +1,4 @@
 import numpy as np
-from .misc import cond_to_data
 
 
 generator_dictionary ={ "nodes" : ["A_int","A_obs","A_★","B_obs","B_★","C_obs","C_★","D_obs","D_★"],
@@ -93,7 +92,9 @@ cond4 = [0,1,2,2]
 
 conds = np.array([cond1,cond2,cond3,cond4])
 
+# from .misc import cond_to_data
 # data_sets = cond_to_data(cond2)
+
 data_sets = None
 sparsity = .5
 

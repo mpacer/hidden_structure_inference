@@ -7,9 +7,8 @@ from lib import config, result_config
 from lib.likelihood_calculations_shared_params import Inference
 from lib.utils import filename_utility
 from lib.misc import cond_to_data
+from lib.graph_json_io import json_graph_list_dumps
 import time
-
-
 
 def main():
     t1 = time.time()
@@ -43,12 +42,19 @@ def main():
     #         if edge in g.edges():
     #             edges_of_interest[edge]+=result_posteriors[idx]
 
+    result_graphs_strings = [json_graph_list_dumps(g_list) for g_list in result_graphs]
+
     filename_base = "hidden_structure_results"
     filename = filename_utility(filename_base)
     filename = os.path.join("results",filename)
 
     with open(filename,'wb') as f:
-        np.savez(f,graphs=result_graphs, posterior=result_posteriors,loglik=result_logliks,init_dict=result_dicts)
+        np.savez(f,
+            g_list_strings=result_graphs_strings, 
+            posterior=result_posteriors, 
+            loglik=result_logliks,
+            init_dict=result_dicts)
+        
     elapsed= time.time() - t1
     print(elapsed)
 
