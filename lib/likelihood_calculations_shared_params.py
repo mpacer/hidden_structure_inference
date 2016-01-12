@@ -50,12 +50,14 @@ class Inference(object):
 
         loglikelihood_by_param = np.zeros(shape = (num_params,num_graphs))
 
+        param_list = []
         for i in range(num_params):
             # loglikelihood = Parallel(n_jobs=-1, backend="multiprocessing")(
             #     delayed(self.parameters_monte_carlo_loglik)(graph, 
             #         param_sample_size,options=options) for graph in self.graphs)
             max_graph_params = GraphParams.from_networkx(self.max_graph) # fix this when you can
-            max_graph_params.sample()
+            tmp = max_graph_params.sample()
+            param_list.append(tmp)
             loglikelihood_by_param[i,:] = Parallel(n_jobs=-1, backend="multiprocessing")(
                 delayed(self.subgraph_loglik)(graph, max_graph_params,
                     options=options) for graph in self.graphs)
@@ -74,7 +76,7 @@ class Inference(object):
         sparsity = options["sparsity"]
         logposterior = self.logposterior_from_loglik_logsparseprior(loglikelihood,sparsity=sparsity)
         # import ipdb; ipdb.set_trace()
-        return graphs,np.exp(logposterior),loglikelihood,options
+        return graphs,np.exp(logposterior),loglikelihood,options,param_list
 
     def subgraph_loglik(self,graph,max_graph_params,options = None):
         # sub_graph_params = max_graph_params.subgraph_copy(graph.edges())
