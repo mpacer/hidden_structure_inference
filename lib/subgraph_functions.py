@@ -20,7 +20,8 @@ def subgraph_from_edges(G,edge_list,ref_back=True):
     
     sub_nodes = list({y for x in edge_list for y in x[0:2]})
     edge_list_no_data = [edge[0:2] for edge in edge_list]
-    
+    assert all([e in G.edges() for e in edge_list_no_data])
+
     if ref_back:
         G_sub = G.subgraph(sub_nodes)
         for edge in G_sub.edges():
@@ -34,14 +35,21 @@ def subgraph_from_edges(G,edge_list,ref_back=True):
                 
     return G_sub
 
+def sub_graph_from_edge_type(graph,edge_types=None,ref_back=False):
+    if edge_types is None:
+        edge_types = []
+    
+    sub_edges = [x for x in graph.edges(data=True) if x[2]['edge_type'] in edge_types]
+    return subgraph_from_edges(graph,sub_edges,ref_back=ref_back)
+
+
 def sub_graph_sample(graph,edge_types=None,param_init=None):
     if param_init is None:
         param_init = {}
     if edge_types is None:
         edge_types = []
-    
-    sub_edges = [x for x in graph.edges(data=True) if x[2]['edge_type'] in edge_types]
-    sub_graph_struct = GraphStructure.from_networkx(subgraph_from_edges(graph,sub_edges,ref_back=False))
+        
+    sub_graph_struct = GraphStructure.from_networkx(sub_graph_from_edge_type(graph,edge_types=edge_types))
     sub_graph_params = GraphParams.from_structure(sub_graph_struct,init_dict=param_init)
     sub_graph_params.sample()
     

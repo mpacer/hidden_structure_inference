@@ -18,6 +18,16 @@ def filename_utility(inputName, file_format = ".npz"):
     return str(inputName)+"_{}".format(datetime.today().strftime("%Y_%V_%u_%H%M")) + str(file_format)
 
 
+def two_list_match_indices(test_sub,test_top):
+    indices = np.full(len(test_sub),np.nan)
+    vals = np.full(len(test_sub),np.nan)
+    for j,element in enumerate(test_sub):
+        for i,x in enumerate(test_top):
+            if element==x:
+                indices[j] = i
+    assert not any(np.isnan(indices))
+    return indices.astype(np.int)
+
 def scale_free_sampler(lower_bound = 1/10, upper_bound=10, size = 1):
     """
     This allows you to approximate the improper probability

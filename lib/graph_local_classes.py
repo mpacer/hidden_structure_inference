@@ -1,7 +1,9 @@
 import numpy as np
 import networkx as nx
 
-from .utils import scale_free_sampler
+from .utils import scale_free_sampler, two_list_match_indices
+from copy import deepcopy
+from collections.abc import Sequence
 
 class GraphStructure(object):
     
@@ -24,6 +26,9 @@ class GraphStructure(object):
         graph.add_edges(self.edges)
         return graph        
         
+    def copy(self):
+        return deepcopy(self)
+
     def __eq__(self, other):
         if self.nodes != other.nodes:
             return False
@@ -38,20 +43,23 @@ class GraphStructure(object):
         return [e for e in self.edges if e[1] == node]
 
 
+
+
 class GraphParams(object):
     
     def __init__(self, n, names = None, p=0.8, 
         scale_free_bounds = (.01,100),
         psi_shape = 1.0, r_shape = 1.0,
-        lambda0 = None):
+        lambda0 = None, **kwargs):
         self.n = n             # number of edges
         if names is None:
             self.names = tuple(range(n)) # names of edges
         else:
             self.names = names
         self.p = p             # probability of sending a message
-        self.scale_free_lbound = scale_free_bounds[0]
-        self.scale_free_ubound = scale_free_bounds[1]
+        self.scale_free_bounds = scale_free_bounds
+        self.scale_free_lbound = self.scale_free_bounds[0]
+        self.scale_free_ubound = self.scale_free_bounds[1]
         self.psi_shape = psi_shape
         self.r_shape = r_shape
         self.lambda0 = lambda0    # scale-free base_rate parameter
@@ -80,6 +88,11 @@ class GraphParams(object):
         self.mu = self.psi / self.r
         return self.to_dict()
     
+    # maybe try to make it multisampled?
+    # possibly better to make a higher class that inherits from GraphParams...
+    def multisample(self,param_num=1):        
+        pass
+
     def to_dict(self):
         return {
             "n": self.n,
@@ -94,6 +107,33 @@ class GraphParams(object):
             "mu": self.mu
         }
     
+    def copy(self):
+        return deepcopy(self)
+
+
+    def update(self, d):
+        for param, val in d.items():
+            if param == 'mu':
+                continue
+            if hasattr(self, param):
+                setattr(self, param, val)
+            else:
+                raise AttributeError("no such attribute '{}'".format(param))
+
+    def subgraph_copy(self,edge_list):
+        tmp_gp = self.copy()
+        match_idx = two_list_match_indices(edge_list,tmp_gp.names)
+        # import ipdb; ipdb.set_trace()
+        assert sorted([tuple(x) for x in np.array(self.names)[match_idx]]) == sorted(edge_list)
+        tmp_gp.n = len(edge_list)
+        tmp_gp.names = sorted(edge_list)
+        tmp_gp.psi = self.psi[match_idx]
+        tmp_gp.r = self.r[match_idx]
+        tmp_gp.mu = tmp_gp.psi/tmp_gp.r
+        return tmp_gp
+
+    # def subgraph_nx_copy(self,nx_graph):
+
     @classmethod
     def from_structure(cls,structure,init_dict=None):
         e_list = sorted(structure.edges)
@@ -104,21 +144,58 @@ class GraphParams(object):
         return g_para
 
     @classmethod
-    def from_dict(cls, full_dict):
-        obj = cls(**full_dict)
+    def from_networkx(cls,graph,init_dict=None):
+        e_list = sorted(GraphStructure.from_networkx(graph).edges) 
+        if init_dict is None:
+            init_dict = {}
+        init_dict["names"] = e_list
+        g_para = cls(len(e_list), **init_dict)
+        return g_para
+
+    @classmethod
+    def from_dict(cls, d):
+        obj = cls(**d)
         obj.lambda0=d['lambda0']
         obj.psi = d['psi']
         obj.r = d['r']
+        # obj.mu = obj.psi/obj.r
         return obj
+
+
+
+
+
+
+
+class GraphParamsList(GraphParams,Sequence):
+
+    def __init__(self,num_params=1):
+        self.num_params = num_params
+        
+    def __contains__(self,item):
+        pass
+
+    def __len__(self):
+        pass
+
+    def __iter__(self):
+        pass
+
+    def __reversed__(self):
+        pass
+
+    def __getitem__(self,key):
+        pass
+
+    def index():
+        pass
+
+    def count():
+        pass
+
+
     
-    def update(self, d):
-        for param, val in d.items():
-            if param == 'mu':
-                continue
-            if hasattr(self, param):
-                setattr(self, param, val)
-            else:
-                raise AttributeError("no such attribute '{}'".format(param))
+
 
 class InnerGraphSimulation(object):
     """
