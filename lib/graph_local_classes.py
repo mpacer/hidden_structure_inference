@@ -3,6 +3,7 @@ import networkx as nx
 
 from .utils import scale_free_sampler, two_list_match_indices
 from copy import deepcopy
+from collections.abc import Sequence
 
 class GraphStructure(object):
     
@@ -164,11 +165,31 @@ class GraphParams(object):
 
 
 
-class GraphParamSet(GraphParams):
+class GraphParamsList(GraphParams,Sequence):
 
-    def __init__(self,num_params):
+    def __init__(self,num_params=1):
         self.num_params = num_params
         
+    def __contains__(self,item):
+        pass
+
+    def __len__(self):
+        pass
+
+    def __iter__(self):
+        pass
+
+    def __reversed__(self):
+        pass
+
+    def __getitem__(self,key):
+        pass
+
+    def index():
+        pass
+
+    def count():
+        pass
 
 
     
