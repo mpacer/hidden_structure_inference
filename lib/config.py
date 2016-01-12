@@ -1,4 +1,6 @@
+import numpy as np
 from .misc import cond_to_data
+
 
 generator_dictionary ={ "nodes" : ["A_int","A_obs","A_★","B_obs","B_★","C_obs","C_★","D_obs","D_★"],
     "query_edge_set" : [
@@ -76,18 +78,23 @@ edge_semantics={
     }
 }
 
-param_sample_size = 4
-stigma_sample_size = 2000
-scale_free_bounds = (10**(-.1),10**(.1))
+param_sample_size = 2
+stigma_sample_size = 100
+# scale_free_bounds = (10**(-.1),10**(.1))
 # scale_free_bounds = (10**(-.25),10**(.25))
 # scale_free_bounds = (10**-1,10**1)
-# scale_free_bounds = (10**-4,10**4)
+scale_free_bounds = (10**-3,10**3)
+small_val = .05
 
-cond1 = [0,0,0,0]
+cond1 = [0,small_val,small_val,small_val]
 cond2 = [0,1,3,2]
 cond3 = [0,3,2,1]
 cond4 = [0,1,2,2]
-data_sets = cond_to_data(cond2)
+
+conds = np.array([cond1,cond2,cond3,cond4])
+
+# data_sets = cond_to_data(cond2)
+data_sets = None
 sparsity = .5
 
 options = {

@@ -19,7 +19,7 @@ def main():
         Edge_Semantics_Rule.graph_semantics_apply(graph,config.edge_semantics)
         
     inference_obj = Inference()
-        
+
     result_graphs, result_posterior, result_loglik, result_dict = inference_obj.p_graph_given_d(graphs,config.options)
     
     edges_of_interest = result_config.edges_of_interest
