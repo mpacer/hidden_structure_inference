@@ -29,11 +29,12 @@ def main():
     result_posteriors = [None]*num_conditions
     result_logliks = [None]*num_conditions
     result_dicts = [None]*num_conditions
+    result_params = [None]*num_conditions
 
     inference_obj = Inference()
 
     for i in range(num_conditions):
-        result_graphs[i], result_posteriors[i], result_logliks[i], result_dicts[i] = inference_obj.p_graph_given_d(graphs,options[i])
+        result_graphs[i], result_posteriors[i], result_logliks[i], result_dicts[i], result_params[i] = inference_obj.p_graph_given_d(graphs,options[i])
     
     # no longer valid edges_of_interest code
     # edges_of_interest = result_config.edges_of_interest
@@ -50,11 +51,12 @@ def main():
 
     with open(filename,'wb') as f:
         np.savez(f,
-            g_list_strings=result_graphs_strings, 
-            posterior=result_posteriors, 
-            loglik=result_logliks,
-            init_dict=result_dicts)
-        
+            g_list_strings = result_graphs_strings, 
+            posterior = result_posteriors, 
+            loglik = result_logliks,
+            init_dict = result_dicts,
+            params = result_params)
+
     elapsed= time.time() - t1
     print(elapsed)
 
