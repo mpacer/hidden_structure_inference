@@ -50,17 +50,17 @@ class Inference(object):
 
         loglikelihood_by_param = np.zeros(shape = (num_params,num_graphs))
 
-        param_list = []
+        self.param_list = [None]*num_params
+        max_graph_params = GraphParams.from_networkx(self.max_graph)
         for i in range(num_params):
-            # loglikelihood = Parallel(n_jobs=-1, backend="multiprocessing")(
-            #     delayed(self.parameters_monte_carlo_loglik)(graph, 
-            #         param_sample_size,options=options) for graph in self.graphs)
-            max_graph_params = GraphParams.from_networkx(self.max_graph) # fix this when you can
-            tmp = max_graph_params.sample()
-            param_list.append(tmp)
-            loglikelihood_by_param[i,:] = Parallel(n_jobs=-1, backend="multiprocessing")(
-                delayed(self.subgraph_loglik)(graph, max_graph_params,
-                    options=options) for graph in self.graphs)
+            self.param_list[i] = max_graph_params.sample()
+
+        # set up parallels loop over parameters
+
+        Parallel(n_jobs = -1, backend = (delayed(self.params_to_subgraph_loglik)(idx) for param_dict in enumerate(self.param_list))
+        # loglikelihood_by_param[i,:] = Parallel(n_jobs=-1, backend="multiprocessing")(
+        #     delayed(self.subgraph_loglik)(graph, max_graph_params,
+        #         options=options) for graph in self.graphs)
         
         loglikelihood = logmeanexp(loglikelihood_by_param,axis=0)
         # import ipdb; ipdb.set_trace()
@@ -77,6 +77,13 @@ class Inference(object):
         logposterior = self.logposterior_from_loglik_logsparseprior(loglikelihood,sparsity=sparsity)
         # import ipdb; ipdb.set_trace()
         return graphs,np.exp(logposterior),loglikelihood,options,param_list
+
+    def params_to_subgraph_loglik(self,index):
+        graphs = self.graphs
+        p_list = self.param_list
+        options = self.options
+
+
 
     def subgraph_loglik(self,graph,max_graph_params,options = None):
         # sub_graph_params = max_graph_params.subgraph_copy(graph.edges())
