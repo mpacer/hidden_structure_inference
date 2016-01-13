@@ -77,11 +77,6 @@ class Inference(object):
     def helper_subgraph_loglik(self,max_graph_params):
         return np.array([self.subgraph_loglik(graph,max_graph_params,options=self.options) for graph in self.graphs])
 
-    def params_to_subgraph_loglik(self,index):
-        graphs = self.graphs
-        p_list = self.param_list
-        options = self.options
-
 
 
     def subgraph_loglik(self,graph,max_graph_params,options = None):
