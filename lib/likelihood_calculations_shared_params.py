@@ -53,7 +53,7 @@ class Inference(object):
         
         self.param_list = [max_graph_params.sample() for x in range(num_params)]
 
-        loglikelihood_by_param = np.array(Parallel(n_jobs = -1, 
+        loglikelihood_by_param = np.array(Parallel(n_jobs = -2, 
             backend = "multiprocessing", verbose = 10)(
             delayed(self.helper_subgraph_loglik)(
                 max_graph_params.from_dict(params)) for params in self.param_list))
