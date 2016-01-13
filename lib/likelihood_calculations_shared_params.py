@@ -58,7 +58,8 @@ class Inference(object):
             #     delayed(self.parameters_monte_carlo_loglik)(graph, 
             #         param_sample_size,options=options) for graph in self.graphs)
             param_list.append(max_graph_params.sample())
-            loglikelihood_by_param[i,:] = Parallel(n_jobs=-1, backend="multiprocessing")(
+            loglikelihood_by_param[i,:] = Parallel(n_jobs=-1, 
+                backend="multiprocessing", verbose = 10)(
                 delayed(self.subgraph_loglik)(graph, max_graph_params,
                     options=options) for graph in self.graphs)
         
@@ -98,6 +99,11 @@ class Inference(object):
     def logposterior_from_loglik_logsparseprior(self,loglik,sparsity=.5):
         logp = log_sparse_graphset_prior(self.graphs,sparsity=sparsity)
         unnormed_logposterior = loglik+logp
+        try: 
+            unnormed_logposterior - logsumexp(unnormed_logposterior)
+        except RuntimeWarning: 
+            import ipdb; ipdb.set_trace()
+        
         return unnormed_logposterior - logsumexp(unnormed_logposterior)
 
     # def parameters_monte_carlo_loglik(self, graph, param_sample_size, options = None):
