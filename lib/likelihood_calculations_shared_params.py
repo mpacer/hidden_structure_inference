@@ -48,16 +48,21 @@ class Inference(object):
 
         # generate 1 complete graph with many data structures shared beneath it
 
-        loglikelihood_by_param = np.zeros(shape = (num_params,num_graphs))
+        # loglikelihood_by_param = np.zeros(shape = (num_params,num_graphs))
 
-        self.param_list = [None]*num_params
         max_graph_params = GraphParams.from_networkx(self.max_graph)
-        for i in range(num_params):
-            self.param_list[i] = max_graph_params.sample()
+        
+        self.param_list = [max_graph_params.sample() for x in range(num_params)]
+
+        loglikelihood_by_param = np.array(Parallel(n_jobs = -1, 
+            backend = "multiprocessing", verbose = 10)(
+            delayed(self.helper_subgraph_loglik)(
+                max_graph_params.from_dict(params)) for params in self.param_list))
 
         # set up parallels loop over parameters
 
-        Parallel(n_jobs = -1, backend = (delayed(self.params_to_subgraph_loglik)(idx) for param_dict in enumerate(self.param_list))
+        # Parallel(n_jobs = -1, backend ="multiprocessing", (
+        #     delayed(self.params_to_subgraph_loglik)(idx) for param_dict in enumerate(self.param_list)))
         # loglikelihood_by_param[i,:] = Parallel(n_jobs=-1, backend="multiprocessing")(
         #     delayed(self.subgraph_loglik)(graph, max_graph_params,
         #         options=options) for graph in self.graphs)
@@ -77,7 +82,10 @@ class Inference(object):
         sparsity = options["sparsity"]
         logposterior = self.logposterior_from_loglik_logsparseprior(loglikelihood,sparsity=sparsity)
         # import ipdb; ipdb.set_trace()
-        return graphs,np.exp(logposterior),loglikelihood,options,param_list
+        return graphs,np.exp(logposterior),loglikelihood,self.options,self.param_list
+
+    def helper_subgraph_loglik(self,max_graph_params):
+        return np.array([self.subgraph_loglik(graph,max_graph_params,options=self.options) for graph in self.graphs])
 
     def params_to_subgraph_loglik(self,index):
         graphs = self.graphs
