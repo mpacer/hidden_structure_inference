@@ -112,13 +112,10 @@ class Inference(object):
         δ = self.options["data_sets"]
 
         # note that q*loglik_from_aux_data should be vector)
-        return np.array([n°np.dot(q,self.loglik_from_aux_data(δ,graph,max_graph_params)) for graph in self.graphs])
+        return np.array([n°np.dot(q,self.approx_loglik_from_hidden_states(δ,graph,max_graph_params)) for graph in self.graphs])
 
-    def loglik_from_aux_data(self,data_sets,graph,max_graph_params):
-        return np.log(np.array([self.approx_likelihood_from_aux(data_set,
-            graph,max_graph_params) for data_set in data_sets])) 
 
-    def approx_likelihood_from_aux(self,data_set,graph,max_params):
+    def approx_loglik_from_hidden_states(self,data_sets,graph,max_graph_params):
         K = options["stigma_sample_size"]
 
         gs_in = GraphStructure.from_networkx(sub_graph_from_edge_type(graph,
@@ -127,64 +124,20 @@ class Inference(object):
 
         hidden_states_iter = self.gen_iter_simulations_first_only(gs_in,gp_in,K)
 
-        return np.mean([likelihood_with_hidden_states(data_set,
-            hidden_state_sample,graph,max_params) for hidden_state_sample 
-            in hidden_states_iter])
-
-    def approx_loglik_from_hidden_states
-
-        # transform this to instead return a single value for the loglikelihood of the data, post-perplexity
-
-        # return self.aux_data_monte_carlo_loglik(gs_in,gp_in,gs_out,gp_out,
-        #     stigma_sample_size,options=options)
-
-
-    def gen_simulations(self,gs_in,gp_in,M):
-        # builds simulation object and samples it returning an M lengthed list
-        inner_simul = InnerGraphSimulation(gs_in,gp_in)
-        return inner_simul.sample(M)
-
-    def gen_iter_simulations(self, gs_in,gp_in,M):
-        # builds a simulation object and then samples returning an M lengthed generator
-        inner_simul = InnerGraphSimulation(gs_in,gp_in)
-        return inner_simul.sample_iter(M)
+        return np.array([logmeanexp([self.loglik_with_hidden_states(
+                    data_set, hidden_state_sample, graph, max_graph_params)
+                    for hidden_state_sample in hidden_states_iter]
+                for data_set in data_sets])
 
     def gen_iter_simulations_first_only(self, gs_in,gp_in,M):
         # builds a simulation object and then samples returning an M lengthed generator
         inner_simul = InnerGraphSimulation(gs_in,gp_in)
         return inner_simul.sample_iter_solely_first_events(M)
 
+    def loglik_with_hidden_states(self, data_set, hidden_state_sample, graph, max_graph_param):
 
-    def aux_data_monte_carlo_loglik(self, gs_in, gp_in, gs_out, gp_out, stigma_sample_size):
-        stigma_sample_size = self.options["stigma_sample_size"]
-        # inner_samp = gen_simulations(gs_in, gp_in, stigma_sample_size)
-        # inner_samp = self.gen_iter_simulations(gs_in, gp_in, stigma_sample_size)
-        inner_samp = self.gen_iter_simulations_first_only(gs_in, gp_in, stigma_sample_size)
-        
-        # get arguments to the loglikelihood 
-        # data_sets are kinds of data
-        data_sets = self.options["data_sets"]
-        
-        # data_probs are the probabilities of those data points
-        data_probs = self.options["data_probs"]
-        
-        # num_data_samps is the number of "sampled" data that we're evaluating it for
-        num_data_samps = self.options["num_data_samps"]
+        return np.sum([self.one_edge_loglik(hidden_cause,obs_event,)])
 
-        # get parameters for the relevant nodes to calculate the likelihood 
-        obs_dict = gp_out.to_dict()
-        
-        # build generator for the simulated log_likelihood for a given parameter set
-        sim_loglike = (self.cross_entropy_loglik(data_sets, data_probs, num_data_samps, stigma, obs_dict) for stigma in inner_samp)
-
-        return logmeanexp(np.fromiter(sim_loglike,dtype=np.float,count=stigma_sample_size))
-
-
-    def cross_entropy_loglik(self, data_sets,data_probs, k , aux_data, obs_dict):
-        # for a finite set of known kinds of data with known probs
-        # we can compute the expected cross-entropy for those kinds of data
-        return np.sum([data_probs[i]*k*self.multi_edge_loglik(obs_data, aux_data, obs_dict) for i,obs_data in enumerate(data_sets)])
-    
 
     def multi_edge_loglik(self, obs_data,aux_data,parameters):
         # return np.sum([self.one_edge_loglik(aux_data[i+1],obs_data[i+1],parameters['psi'][i+1],parameters['r'][i+1]) for i in range(len(aux_data)-1)]) 
@@ -199,10 +152,14 @@ class Inference(object):
         # # end special casing
 
         # # loglik of data set is the sum of the loglikelihoods of the individual data points (they're independent)
-        
         return np.sum([self.one_edge_loglik(aux_data[i],obs_data[i],local_dict['psi'][i],local_dict['r'][i]) for i in range(len(aux_data))]) 
 
     def one_edge_loglik(self, cause_time, effect_time, psi, r, T=4.0):
+
+        # is this an instantaneous intervention?
+        if cause_time - effect_time == 0:
+            return 0 
+
         # if the cause never occurs it occurs at infinity
         if np.isinf(cause_time):
             # it is certain that the effect will not occur if the cause does not occur
@@ -240,3 +197,78 @@ class Inference(object):
                     exp_val = 0         
 
                 return np.log(psi) - (r*(effect_time-cause_time)) - (psi/r)*(1-exp_val)
+
+
+### begin valid but deprecated block
+# if you were to use these you'd use them together, and they would allow you to
+# independently sample the different hidden states, but that will increase variance
+
+    def loglik_from_aux_data(self,data_sets,graph,max_graph_params):
+        return np.log(np.array([self.approx_likelihood_from_aux(data_set,
+            graph,max_graph_params) for data_set in data_sets])) 
+
+    def approx_likelihood_from_aux(self,data_set,graph,max_params):
+        K = options["stigma_sample_size"]
+
+        gs_in = GraphStructure.from_networkx(sub_graph_from_edge_type(graph,
+            edge_types=["hidden_sample"]))
+        gp_in = max_graph_params.subgraph_copy(gs_in.edges)
+
+        hidden_states_iter = self.gen_iter_simulations_first_only(gs_in,gp_in,K)
+
+        return np.mean([likelihood_with_hidden_states(data_set,
+            hidden_state_sample,graph,max_params) for hidden_state_sample 
+            in hidden_states_iter])
+
+### end valid but deprecated block
+
+
+
+        # transform this to instead return a single value for the loglikelihood of the data, post-perplexity
+
+        # return self.aux_data_monte_carlo_loglik(gs_in,gp_in,gs_out,gp_out,
+        #     stigma_sample_size,options=options)
+
+
+    def gen_simulations(self,gs_in,gp_in,M):
+        # builds simulation object and samples it returning an M lengthed list
+        inner_simul = InnerGraphSimulation(gs_in,gp_in)
+        return inner_simul.sample(M)
+
+    def gen_iter_simulations(self, gs_in,gp_in,M):
+        # builds a simulation object and then samples returning an M lengthed generator
+        inner_simul = InnerGraphSimulation(gs_in,gp_in)
+        return inner_simul.sample_iter(M)
+
+
+
+    # def aux_data_monte_carlo_loglik(self, gs_in, gp_in, gs_out, gp_out, stigma_sample_size):
+    #     stigma_sample_size = self.options["stigma_sample_size"]
+    #     # inner_samp = gen_simulations(gs_in, gp_in, stigma_sample_size)
+    #     # inner_samp = self.gen_iter_simulations(gs_in, gp_in, stigma_sample_size)
+    #     inner_samp = self.gen_iter_simulations_first_only(gs_in, gp_in, stigma_sample_size)
+        
+    #     # get arguments to the loglikelihood 
+    #     # data_sets are kinds of data
+    #     data_sets = self.options["data_sets"]
+        
+    #     # data_probs are the probabilities of those data points
+    #     data_probs = self.options["data_probs"]
+        
+    #     # num_data_samps is the number of "sampled" data that we're evaluating it for
+    #     num_data_samps = self.options["num_data_samps"]
+
+    #     # get parameters for the relevant nodes to calculate the likelihood 
+    #     obs_dict = gp_out.to_dict()
+        
+    #     # build generator for the simulated log_likelihood for a given parameter set
+    #     sim_loglike = (self.cross_entropy_loglik(data_sets, data_probs, num_data_samps, stigma, obs_dict) for stigma in inner_samp)
+
+    #     return logmeanexp(np.fromiter(sim_loglike,dtype=np.float,count=stigma_sample_size))
+
+
+    # def cross_entropy_loglik(self, data_sets,data_probs, k , aux_data, obs_dict):
+    #     # for a finite set of known kinds of data with known probs
+    #     # we can compute the expected cross-entropy for those kinds of data
+    #     return np.sum([data_probs[i]*k*self.multi_edge_loglik(obs_data, aux_data, obs_dict) for i,obs_data in enumerate(data_sets)])
+    
