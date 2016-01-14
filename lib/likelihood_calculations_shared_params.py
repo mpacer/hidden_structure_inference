@@ -24,6 +24,18 @@ class Inference(object):
     #     # i want to get back some kind of object that i can then iterate 
     #     # through on a per graph basis
 
+    def logposterior_from_loglik_logsparseprior(self,loglik,sparsity=.5):
+        logp = log_sparse_graphset_prior(self.graphs,sparsity=sparsity)
+        unnormed_logposterior = loglik+logp
+        try: 
+            np.seterr(all='raise')
+            unnormed_logposterior - logsumexp(unnormed_logposterior)
+            np.seterr(over='raise')
+        except RuntimeWarning: 
+            import ipdb; ipdb.set_trace()
+        
+        return unnormed_logposterior - logsumexp(unnormed_logposterior)
+
 
     def p_graph_given_d(self,graphs,options):
         # sets a catch for all numerical warnings to be treated as errors
@@ -53,11 +65,17 @@ class Inference(object):
         
         self.param_list = [max_graph_params.sample() for x in range(num_params)]
 
+        # loglikelihood_by_param = np.array(Parallel(n_jobs = -2, 
+        #     backend = "multiprocessing", verbose = 10)(
+        #     delayed(self._helper_subgraph_loglik)(
+        #         max_graph_params.from_dict(params)) for params in self.param_list))
+        
         loglikelihood_by_param = np.array(Parallel(n_jobs = -2, 
             backend = "multiprocessing", verbose = 10)(
-            delayed(self.helper_subgraph_loglik)(
+            delayed(self.subgraph_cross_entropy)(
                 max_graph_params.from_dict(params)) for params in self.param_list))
-        
+
+
         loglikelihood = logmeanexp(loglikelihood_by_param,axis=0)
         # import ipdb; ipdb.set_trace()
         # time_vec = np.empty([len(self.graphs),2])
@@ -74,67 +92,52 @@ class Inference(object):
         # import ipdb; ipdb.set_trace()
         return graphs,np.exp(logposterior),loglikelihood,self.options,self.param_list
 
-    def helper_subgraph_loglik(self,max_graph_params):
-        return np.array([self.subgraph_loglik(graph,max_graph_params,options=self.options) for graph in self.graphs])
+    # def _helper_subgraph_loglik(self,max_graph_params):
+    #     return np.array([self.subgraph_cross_entropy(graph,max_graph_params) for graph in self.graphs])
 
 
-
-    def subgraph_loglik(self,graph,max_graph_params,options = None):
+    def subgraph_cross_entropy(self,max_graph_params):
         # sub_graph_params = max_graph_params.subgraph_copy(graph.edges())
 
-        stigma_sample_size = options["stigma_sample_size"]
+        # stigma_sample_size = options["stigma_sample_size"]
+
+        # gs_in = GraphStructure.from_networkx(sub_graph_from_edge_type(graph,
+        #     edge_types=["hidden_sample"]))
+        # gs_out = GraphStructure.from_networkx(sub_graph_from_edge_type(graph,
+        #     edge_types=["observed"]))
+        # gp_in = max_graph_params.subgraph_copy(gs_in.edges)
+        # gp_out = max_graph_params.subgraph_copy(gs_out.edges)
+        n = self.options["num_data_samps"]
+        q = self.options["data_probs"]
+        δ = self.options["data_sets"]
+
+        # note that q*loglik_from_aux_data should be vector)
+        return np.array([n°np.dot(q,self.loglik_from_aux_data(δ,graph,max_graph_params)) for graph in self.graphs])
+
+    def loglik_from_aux_data(self,data_sets,graph,max_graph_params):
+        return np.log(np.array([self.approx_likelihood_from_aux(data_set,
+            graph,max_graph_params) for data_set in data_sets])) 
+
+    def approx_likelihood_from_aux(self,data_set,graph,max_params):
+        K = options["stigma_sample_size"]
 
         gs_in = GraphStructure.from_networkx(sub_graph_from_edge_type(graph,
             edge_types=["hidden_sample"]))
-        gs_out = GraphStructure.from_networkx(sub_graph_from_edge_type(graph,
-            edge_types=["observed"]))
         gp_in = max_graph_params.subgraph_copy(gs_in.edges)
-        gp_out = max_graph_params.subgraph_copy(gs_out.edges)
 
+        hidden_states_iter = self.gen_iter_simulations_first_only(gs_in,gp_in,K)
 
-        return self.aux_data_monte_carlo_loglik(gs_in,gp_in,gs_out,gp_out,
-            stigma_sample_size,options=options)
+        return np.mean([likelihood_with_hidden_states(data_set,
+            hidden_state_sample,graph,max_params) for hidden_state_sample 
+            in hidden_states_iter])
 
+    def approx_loglik_from_hidden_states
 
-    def logposterior_from_loglik_logsparseprior(self,loglik,sparsity=.5):
-        logp = log_sparse_graphset_prior(self.graphs,sparsity=sparsity)
-        unnormed_logposterior = loglik+logp
-        try: 
-            unnormed_logposterior - logsumexp(unnormed_logposterior)
-        except RuntimeWarning: 
-            import ipdb; ipdb.set_trace()
-        
-        return unnormed_logposterior - logsumexp(unnormed_logposterior)
+        # transform this to instead return a single value for the loglikelihood of the data, post-perplexity
 
-    # def parameters_monte_carlo_loglik(self, graph, param_sample_size, options = None):
-    #     # initialize the dictionary with the scale_free_bounds specified in the options
-    #     init_dict = {"scale_free_bounds":options["scale_free_bounds"]}
-    #     # internal nodes
-    #     gs_in, gp_in = sub_graph_sample(graph, edge_types=["hidden_sample"], param_init=init_dict)
-    #     init_dict["lambda0"]=gp_in.to_dict()["lambda0"]
-    #     gs_out, gp_out = sub_graph_sample(graph, edge_types=['observed'], param_init=init_dict)
-        
-    #     param_sample_logliks = self._helper_iter_param_sampler(gs_in,gp_in,gs_out,gp_out,param_sample_size,options)
-        
-    #     return logmeanexp(np.fromiter(param_sample_logliks,dtype=np.float,count=param_sample_size))
+        # return self.aux_data_monte_carlo_loglik(gs_in,gp_in,gs_out,gp_out,
+        #     stigma_sample_size,options=options)
 
-    # def _helper_iter_param_sampler(self, gs_in,gp_in,gs_out,gp_out,param_sample_size,options):
-    #     # a helper function for sampling parameters in inner graph 
-    #     stigma_sample_size=options["stigma_sample_size"]
-    #     for i in range(param_sample_size):
-    #         # reset the base_rate to None so it is resampled
-    #         update_dict = {"lambda0":None}
-    #         gp_in.update(d=update_dict)
-    #         # sample parameters for inner graph
-    #         gp_in.sample()
-            
-    #         # extract base_rate used for inner graph samples to be used for outer graph
-    #         update_dict["lambda0"]=gp_in.to_dict()["lambda0"]
-    #         gp_out.update(d=update_dict)
-    #         # sample parameters for outer graph
-    #         gp_out.sample()
-            
-    #         yield self.aux_data_monte_carlo_loglik(gs_in,gp_in,gs_out,gp_out,stigma_sample_size,options=options)
 
     def gen_simulations(self,gs_in,gp_in,M):
         # builds simulation object and samples it returning an M lengthed list
@@ -152,21 +155,21 @@ class Inference(object):
         return inner_simul.sample_iter_solely_first_events(M)
 
 
-    def aux_data_monte_carlo_loglik(self, gs_in, gp_in, gs_out, gp_out, stigma_sample_size, options=None):
-        stigma_sample_size = options["stigma_sample_size"]
+    def aux_data_monte_carlo_loglik(self, gs_in, gp_in, gs_out, gp_out, stigma_sample_size):
+        stigma_sample_size = self.options["stigma_sample_size"]
         # inner_samp = gen_simulations(gs_in, gp_in, stigma_sample_size)
         # inner_samp = self.gen_iter_simulations(gs_in, gp_in, stigma_sample_size)
         inner_samp = self.gen_iter_simulations_first_only(gs_in, gp_in, stigma_sample_size)
         
         # get arguments to the loglikelihood 
         # data_sets are kinds of data
-        data_sets = options["data_sets"]
+        data_sets = self.options["data_sets"]
         
         # data_probs are the probabilities of those data points
-        data_probs = options["data_probs"]
+        data_probs = self.options["data_probs"]
         
         # num_data_samps is the number of "sampled" data that we're evaluating it for
-        num_data_samps = options["num_data_samps"]
+        num_data_samps = self.options["num_data_samps"]
 
         # get parameters for the relevant nodes to calculate the likelihood 
         obs_dict = gp_out.to_dict()
