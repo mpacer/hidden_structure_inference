@@ -99,16 +99,16 @@ class Inference(object):
         # gp_in = max_graph_params.subgraph_copy(gs_in.edges)
         # gp_out = max_graph_params.subgraph_copy(gs_out.edges)
         n = self.options["num_data_samps"]
-        q = self.options["data_probs"]
-        δ = self.options["data_sets"]
+        q = np.array(self.options["data_probs"])
+        δ = np.array(self.options["data_sets"])
 
         # note that q*loglik_from_aux_data should be vector)
         return np.array([n*np.dot(q,self.approx_loglik_from_hidden_states(δ,graph,max_graph_params)) for graph in self.graphs])
 
-    def gen_iter_simulations_first_only(self, gs_in,gp_in,M):
+    def gen_iter_simulations_first_only(self, gs_in,gp_in,K):
         # builds a simulation object and then samples returning an M lengthed generator
         inner_simul = InnerGraphSimulation(gs_in, gp_in)
-        return inner_simul.sample_iter_solely_first_events(M)
+        return inner_simul.sample_iter_solely_first_events(K)
 
     def approx_loglik_from_hidden_states(self,data_sets,graph,max_graph_params):
         K = self.options["stigma_sample_size"]
@@ -117,8 +117,8 @@ class Inference(object):
             edge_types=["hidden_sample"]))
         gp_in = max_graph_params.subgraph_copy(gs_in.edges)
 
-        # hidden_states_iter = self.gen_iter_simulations_first_only(gs_in,gp_in,K)
-        hidden_states = self.gen_iter_simulations_first_only(gs_in,gp_in,K)
+        hidden_states_iter = self.gen_iter_simulations_first_only(gs_in,gp_in,K)
+        # hidden_states = self.gen_iter_simulations_first_only(gs_in,gp_in,K)
         
         # def tmp_func(data_set):
         #     return [self.loglik_with_hidden_states(
@@ -129,7 +129,14 @@ class Inference(object):
         
         # return np.array([logmeanexp(np.array(tmp_func(data_set),dtype=np.float))
         #         for data_set in data_sets])
-        return 
+        
+        temp_array = np.empty(shape=(K,data_sets.shape[0]))
+        for idx, hidden_state_sample in enumerate(hidden_states_iter):
+            temp_array[idx,:] = np.array([self.loglik_with_hidden_states(data_set,hidden_state_sample,graph,max_graph_params) for data_set in data_sets])
+
+        # import ipdb; ipdb.set_trace()
+
+        return logmeanexp(temp_array,axis=0)
         # return np.array([logmeanexp(np.array(
         #         [self.loglik_with_hidden_states(data_set, hidden_state_sample, graph, max_graph_params)
         #             for hidden_state_sample in hidden_states]))
