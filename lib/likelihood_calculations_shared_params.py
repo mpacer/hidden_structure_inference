@@ -28,9 +28,9 @@ class Inference(object):
         logp = log_sparse_graphset_prior(self.graphs,sparsity=sparsity)
         unnormed_logposterior = loglik+logp
         try: 
-            np.seterr(all='raise')
+            # np.seterr(all='raise')
             unnormed_logposterior - logsumexp(unnormed_logposterior)
-            np.seterr(over='raise')
+            # np.seterr(over='raise')
         except RuntimeWarning: 
             import ipdb; ipdb.set_trace()
         
@@ -70,8 +70,8 @@ class Inference(object):
         #     delayed(self._helper_subgraph_loglik)(
         #         max_graph_params.from_dict(params)) for params in self.param_list))
         
-        loglikelihood_by_param = np.array(Parallel(n_jobs = -2, 
-            backend = "multiprocessing", verbose = 10)(
+        loglikelihood_by_param = np.array(Parallel(n_jobs = -1, 
+            backend = "multiprocessing", verbose = 20)(
             delayed(self.subgraph_cross_entropy)(
                 max_graph_params.from_dict(params)) for params in self.param_list))
 
@@ -103,29 +103,40 @@ class Inference(object):
         δ = self.options["data_sets"]
 
         # note that q*loglik_from_aux_data should be vector)
-        return np.array([n°np.dot(q,self.approx_loglik_from_hidden_states(δ,graph,max_graph_params)) for graph in self.graphs])
-
-
-    def approx_loglik_from_hidden_states(self,data_sets,graph,max_graph_params):
-        K = options["stigma_sample_size"]
-
-        gs_in = GraphStructure.from_networkx(sub_graph_from_edge_type(graph,
-            edge_types=["hidden_sample"]))
-        gp_in = max_graph_params.subgraph_copy(gs_in.edges)
-
-        hidden_states_iter = self.gen_iter_simulations_first_only(gs_in,gp_in,K)
-
-        return np.array([logmeanexp([self.loglik_with_hidden_states(
-                    data_set, hidden_state_sample, graph, max_graph_params)
-                    for hidden_state_sample in hidden_states_iter]
-                for data_set in data_sets])
+        return np.array([n*np.dot(q,self.approx_loglik_from_hidden_states(δ,graph,max_graph_params)) for graph in self.graphs])
 
     def gen_iter_simulations_first_only(self, gs_in,gp_in,M):
         # builds a simulation object and then samples returning an M lengthed generator
         inner_simul = InnerGraphSimulation(gs_in, gp_in)
         return inner_simul.sample_iter_solely_first_events(M)
 
-    def loglik_with_hidden_states(self, data_set, hidden_state_sample, graph, max_graph_param):
+    def approx_loglik_from_hidden_states(self,data_sets,graph,max_graph_params):
+        K = self.options["stigma_sample_size"]
+
+        gs_in = GraphStructure.from_networkx(sub_graph_from_edge_type(graph,
+            edge_types=["hidden_sample"]))
+        gp_in = max_graph_params.subgraph_copy(gs_in.edges)
+
+        # hidden_states_iter = self.gen_iter_simulations_first_only(gs_in,gp_in,K)
+        hidden_states = self.gen_iter_simulations_first_only(gs_in,gp_in,K)
+        
+        # def tmp_func(data_set):
+        #     return [self.loglik_with_hidden_states(
+        #             data_set, hidden_state_sample, graph, max_graph_params)
+        #             for hidden_state_sample in hidden_states_iter.copy()]
+
+        # import ipdb; ipdb.set_trace()
+        
+        # return np.array([logmeanexp(np.array(tmp_func(data_set),dtype=np.float))
+        #         for data_set in data_sets])
+        return 
+        # return np.array([logmeanexp(np.array(
+        #         [self.loglik_with_hidden_states(data_set, hidden_state_sample, graph, max_graph_params)
+        #             for hidden_state_sample in hidden_states]))
+        #         for data_set in data_sets])
+
+
+    def loglik_with_hidden_states(self, data_set, hidden_state_sample, graph, max_graph_params):
 
         gs_out = GraphStructure.from_networkx(sub_graph_from_edge_type(graph,
             edge_types=["observed"]))
