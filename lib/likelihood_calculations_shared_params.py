@@ -77,19 +77,10 @@ class Inference(object):
 
 
         loglikelihood = logmeanexp(loglikelihood_by_param,axis=0)
-        # import ipdb; ipdb.set_trace()
-        # time_vec = np.empty([len(self.graphs),2])
-        # for i,graph in enumerate(self.graphs):
         
-        #     loglikelihood[i] = self.parameters_monte_carlo_loglik(graph,param_sample_size,options=options)
-        
-            # if i in [int(np.floor(j*len(self.graphs))) for j in np.arange(0,1,.1)]:
-            #     sys.stdout.write("{:.2%} ".format(i/len(self.graphs)))
-            #     sys.stdout.flush()
-        # import ipdb; ipdb.set_trace()
         sparsity = options["sparsity"]
         logposterior = self.logposterior_from_loglik_logsparseprior(loglikelihood,sparsity=sparsity)
-        # import ipdb; ipdb.set_trace()
+
         return graphs,np.exp(logposterior),loglikelihood,self.options,self.param_list
 
     # def _helper_subgraph_loglik(self,max_graph_params):
@@ -131,28 +122,22 @@ class Inference(object):
 
     def gen_iter_simulations_first_only(self, gs_in,gp_in,M):
         # builds a simulation object and then samples returning an M lengthed generator
-        inner_simul = InnerGraphSimulation(gs_in,gp_in)
+        inner_simul = InnerGraphSimulation(gs_in, gp_in)
         return inner_simul.sample_iter_solely_first_events(M)
 
     def loglik_with_hidden_states(self, data_set, hidden_state_sample, graph, max_graph_param):
 
-        return np.sum([self.one_edge_loglik(hidden_cause,obs_event,)])
+        gs_out = GraphStructure.from_networkx(sub_graph_from_edge_type(graph,
+            edge_types=["observed"]))
+        gp_out = max_graph_params.subgraph_copy(gs_out.edges)
 
 
-    def multi_edge_loglik(self, obs_data,aux_data,parameters):
-        # return np.sum([self.one_edge_loglik(aux_data[i+1],obs_data[i+1],parameters['psi'][i+1],parameters['r'][i+1]) for i in range(len(aux_data)-1)]) 
-        
-        # special casing for my problem, this needs to be made more general
-        # extract non-intervention nodes as we know when the intervention node occurred
-        non_int_node_idx = slice(1,4)
-        obs_data = obs_data[non_int_node_idx]
-        aux_data = aux_data[non_int_node_idx]
-        grab = ['psi','r']
-        local_dict = {i:parameters[i][1:] for i in parameters if i in grab}
-        # # end special casing
 
-        # # loglik of data set is the sum of the loglikelihoods of the individual data points (they're independent)
-        return np.sum([self.one_edge_loglik(aux_data[i],obs_data[i],local_dict['psi'][i],local_dict['r'][i]) for i in range(len(aux_data))]) 
+
+        return np.sum([self.one_edge_loglik(hidden_cause,obs_effect,gp_out.psi,gp_out.r) for i in range(gp_out.n)])
+
+
+    
 
     def one_edge_loglik(self, cause_time, effect_time, psi, r, T=4.0):
 
@@ -272,3 +257,18 @@ class Inference(object):
     #     # we can compute the expected cross-entropy for those kinds of data
     #     return np.sum([data_probs[i]*k*self.multi_edge_loglik(obs_data, aux_data, obs_dict) for i,obs_data in enumerate(data_sets)])
     
+
+# def multi_edge_loglik(self, obs_data,aux_data,parameters):
+#         # return np.sum([self.one_edge_loglik(aux_data[i+1],obs_data[i+1],parameters['psi'][i+1],parameters['r'][i+1]) for i in range(len(aux_data)-1)]) 
+        
+#         # special casing for my problem, this needs to be made more general
+#         # extract non-intervention nodes as we know when the intervention node occurred
+#         non_int_node_idx = slice(1,4)
+#         obs_data = obs_data[non_int_node_idx]
+#         aux_data = aux_data[non_int_node_idx]
+#         grab = ['psi','r']
+#         local_dict = {i:parameters[i][1:] for i in parameters if i in grab}
+#         # # end special casing
+
+#         # # loglik of data set is the sum of the loglikelihoods of the individual data points (they're independent)
+#         return np.sum([self.one_edge_loglik(aux_data[i],obs_data[i],local_dict['psi'][i],local_dict['r'][i]) for i in range(len(aux_data))]) 
