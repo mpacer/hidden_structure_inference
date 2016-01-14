@@ -131,13 +131,8 @@ class Inference(object):
             edge_types=["observed"]))
         gp_out = max_graph_params.subgraph_copy(gs_out.edges)
 
-
-
-
-        return np.sum([self.one_edge_loglik(hidden_cause,obs_effect,gp_out.psi,gp_out.r) for i in range(gp_out.n)])
-
-
-    
+        return np.sum([self.one_edge_loglik(cause_time, effect_time,psi,r) for 
+            cause_time, effect_time,psi,r in zip(hidden_state_sample,data_set,gp_out.psi,gp_out.r)])
 
     def one_edge_loglik(self, cause_time, effect_time, psi, r, T=4.0):
 
