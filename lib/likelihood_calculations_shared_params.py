@@ -23,7 +23,7 @@ class Inference(object):
     #     local_g = GraphParams.from_networkx(top_graph)
     #     # i want to get back some kind of object that i can then iterate 
     #     # through on a per graph basis
-
+    @profile
     def logposterior_from_loglik_logsparseprior(self,loglik,sparsity=.5):
         logp = log_sparse_graphset_prior(self.graphs,sparsity=sparsity)
         unnormed_logposterior = loglik+logp
@@ -36,7 +36,7 @@ class Inference(object):
         
         return unnormed_logposterior - logsumexp(unnormed_logposterior)
 
-
+    @profile
     def p_graph_given_d(self,graphs,options):
         # sets a catch for all numerical warnings to be treated as errors
         # np.seterr(all='raise')
@@ -70,12 +70,14 @@ class Inference(object):
         #     delayed(self._helper_subgraph_loglik)(
         #         max_graph_params.from_dict(params)) for params in self.param_list))
         
-        loglikelihood_by_param = np.array(Parallel(n_jobs = -1, 
-            backend = "multiprocessing", verbose = 20)(
-            delayed(self.subgraph_cross_entropy)(
-                max_graph_params.from_dict(params)) for params in self.param_list))
+        # loglikelihood_by_param = np.array(Parallel(n_jobs = -1, 
+        #     backend = "multiprocessing", verbose = 20)(
+        #     delayed(self.subgraph_cross_entropy)(
+        #         max_graph_params.from_dict(params)) for params in self.param_list))
 
-
+        loglikelihood_by_param = np.array([self.subgraph_cross_entropy(max_graph_params.from_dict(params)) 
+            for params in self.param_list])
+        
         loglikelihood = logmeanexp(loglikelihood_by_param,axis=0)
         
         sparsity = options["sparsity"]
@@ -86,31 +88,28 @@ class Inference(object):
     # def _helper_subgraph_loglik(self,max_graph_params):
     #     return np.array([self.subgraph_cross_entropy(graph,max_graph_params) for graph in self.graphs])
 
+    @profile
 
     def subgraph_cross_entropy(self,max_graph_params):
-        # sub_graph_params = max_graph_params.subgraph_copy(graph.edges())
-
-        # stigma_sample_size = options["stigma_sample_size"]
-
-        # gs_in = GraphStructure.from_networkx(sub_graph_from_edge_type(graph,
-        #     edge_types=["hidden_sample"]))
-        # gs_out = GraphStructure.from_networkx(sub_graph_from_edge_type(graph,
-        #     edge_types=["observed"]))
-        # gp_in = max_graph_params.subgraph_copy(gs_in.edges)
-        # gp_out = max_graph_params.subgraph_copy(gs_out.edges)
         n = self.options["num_data_samps"]
         q = np.array(self.options["data_probs"])
         δ = np.array(self.options["data_sets"])
 
-        # note that q*loglik_from_aux_data should be vector)
-        return np.array([n*np.dot(q,self.approx_loglik_from_hidden_states(δ,graph,max_graph_params)) for graph in self.graphs])
+        gs_out = GraphStructure.from_networkx(sub_graph_from_edge_type(self.max_graph,
+            edge_types=["observed"]))
+        gp_out = max_graph_params.subgraph_copy(gs_out.edges)
 
+        # note that q*loglik_from_aux_data should be vector)
+        return np.array([n*np.dot(q,self.approx_loglik_from_hidden_states(δ,graph,max_graph_params,gs_out,gp_out)) for graph in self.graphs])
+
+    @profile
     def gen_iter_simulations_first_only(self, gs_in,gp_in,K):
         # builds a simulation object and then samples returning an M lengthed generator
         inner_simul = InnerGraphSimulation(gs_in, gp_in)
         return inner_simul.sample_iter_solely_first_events(K)
 
-    def approx_loglik_from_hidden_states(self,data_sets,graph,max_graph_params):
+    @profile
+    def approx_loglik_from_hidden_states(self,data_sets,graph,max_graph_params,gs_out,gp_out):
         K = self.options["stigma_sample_size"]
 
         gs_in = GraphStructure.from_networkx(sub_graph_from_edge_type(graph,
@@ -118,40 +117,23 @@ class Inference(object):
         gp_in = max_graph_params.subgraph_copy(gs_in.edges)
 
         hidden_states_iter = self.gen_iter_simulations_first_only(gs_in,gp_in,K)
-        # hidden_states = self.gen_iter_simulations_first_only(gs_in,gp_in,K)
-        
-        # def tmp_func(data_set):
-        #     return [self.loglik_with_hidden_states(
-        #             data_set, hidden_state_sample, graph, max_graph_params)
-        #             for hidden_state_sample in hidden_states_iter.copy()]
 
-        # import ipdb; ipdb.set_trace()
-        
-        # return np.array([logmeanexp(np.array(tmp_func(data_set),dtype=np.float))
-        #         for data_set in data_sets])
         
         temp_array = np.empty(shape=(K,data_sets.shape[0]))
         for idx, hidden_state_sample in enumerate(hidden_states_iter):
-            temp_array[idx,:] = np.array([self.loglik_with_hidden_states(data_set,hidden_state_sample,graph,max_graph_params) for data_set in data_sets])
+            temp_array[idx,:] = np.array([self.loglik_with_hidden_states(data_set,hidden_state_sample,gs_out,gp_out) for data_set in data_sets])
 
-        # import ipdb; ipdb.set_trace()
 
         return logmeanexp(temp_array,axis=0)
-        # return np.array([logmeanexp(np.array(
-        #         [self.loglik_with_hidden_states(data_set, hidden_state_sample, graph, max_graph_params)
-        #             for hidden_state_sample in hidden_states]))
-        #         for data_set in data_sets])
 
+    @profile
+    def loglik_with_hidden_states(self, data_set, hidden_state_sample, gs_out,gp_out):
 
-    def loglik_with_hidden_states(self, data_set, hidden_state_sample, graph, max_graph_params):
-
-        gs_out = GraphStructure.from_networkx(sub_graph_from_edge_type(graph,
-            edge_types=["observed"]))
-        gp_out = max_graph_params.subgraph_copy(gs_out.edges)
 
         return np.sum([self.one_edge_loglik(cause_time, effect_time,psi,r) for 
             cause_time, effect_time,psi,r in zip(hidden_state_sample,data_set,gp_out.psi,gp_out.r)])
 
+    @profile
     def one_edge_loglik(self, cause_time, effect_time, psi, r, T=4.0):
 
         # is this an instantaneous intervention?
@@ -201,10 +183,12 @@ class Inference(object):
 # if you were to use these you'd use them together, and they would allow you to
 # independently sample the different hidden states, but that will increase variance
 
+    @profile
     def loglik_from_aux_data(self,data_sets,graph,max_graph_params):
         return np.log(np.array([self.approx_likelihood_from_aux(data_set,
             graph,max_graph_params) for data_set in data_sets])) 
 
+    @profile
     def approx_likelihood_from_aux(self,data_set,graph,max_params):
         K = options["stigma_sample_size"]
 
