@@ -77,9 +77,9 @@ edge_semantics={
     }
 }
 
-
 param_sample_size = 3000
-stigma_sample_size = 50000
+stigma_sample_size = 10000
+
 # scale_free_bounds = (10**(-.1),10**(.1))
 
 # scale_free_bounds = (10**(-.25),10**(.25))
