@@ -14,3 +14,4 @@ results/test_file.txt
 results/test_json.json
 stack_overflow_notes/
 
+run_simulation.py.prof
