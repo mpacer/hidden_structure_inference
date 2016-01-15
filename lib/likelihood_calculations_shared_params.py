@@ -89,7 +89,6 @@ class Inference(object):
     #     return np.array([self.subgraph_cross_entropy(graph,max_graph_params) for graph in self.graphs])
 
     @profile
-
     def subgraph_cross_entropy(self,max_graph_params):
         n = self.options["num_data_samps"]
         q = np.array(self.options["data_probs"])
@@ -128,7 +127,6 @@ class Inference(object):
 
     @profile
     def loglik_with_hidden_states(self, data_set, hidden_state_sample, gs_out,gp_out):
-
 
         return np.sum([self.one_edge_loglik(cause_time, effect_time,psi,r) for 
             cause_time, effect_time,psi,r in zip(hidden_state_sample,data_set,gp_out.psi,gp_out.r)])
