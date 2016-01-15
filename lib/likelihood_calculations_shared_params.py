@@ -73,13 +73,13 @@ class Inference(object):
         
         self.param_list = [max_graph_params.sample() for x in range(num_params)]
         
-        # loglikelihood_by_param = np.array(Parallel(n_jobs = -1, 
-        #     backend = "multiprocessing", verbose = 20)(
-        #     delayed(self.subgraph_cross_entropy)(
-        #         max_graph_params.from_dict(params)) for params in self.param_list))
+        loglikelihood_by_param = np.array(Parallel(n_jobs = -1, 
+            backend = "multiprocessing", verbose = 20)(
+            delayed(self.subgraph_cross_entropy)(
+                max_graph_params.from_dict(params)) for params in self.param_list))
 
-        loglikelihood_by_param = np.array([self.subgraph_cross_entropy(max_graph_params.from_dict(params)) 
-            for params in self.param_list])
+        # loglikelihood_by_param = np.array([self.subgraph_cross_entropy(max_graph_params.from_dict(params)) 
+        #     for params in self.param_list])
         
         loglikelihood = logmeanexp(loglikelihood_by_param,axis=0)
         
