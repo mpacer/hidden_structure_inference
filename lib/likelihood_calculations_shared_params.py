@@ -177,39 +177,6 @@ class Inference(object):
                 return np.log(psi) - (r*(effect_time-cause_time)) - (psi/r)*(1-exp_val)
 
 
-### begin valid but deprecated block
-# if you were to use these you'd use them together, and they would allow you to
-# independently sample the different hidden states, but that will increase variance
-
-    @profile
-    def loglik_from_aux_data(self,data_sets,graph,max_graph_params):
-        return np.log(np.array([self.approx_likelihood_from_aux(data_set,
-            graph,max_graph_params) for data_set in data_sets])) 
-
-    @profile
-    def approx_likelihood_from_aux(self,data_set,graph,max_params):
-        K = options["stigma_sample_size"]
-
-        gs_in = GraphStructure.from_networkx(sub_graph_from_edge_type(graph,
-            edge_types=["hidden_sample"]))
-        gp_in = max_graph_params.subgraph_copy(gs_in.edges)
-
-        hidden_states_iter = self.gen_iter_simulations_first_only(gs_in,gp_in,K)
-
-        return np.mean([likelihood_with_hidden_states(data_set,
-            hidden_state_sample,graph,max_params) for hidden_state_sample 
-            in hidden_states_iter])
-
-### end valid but deprecated block
-
-
-
-        # transform this to instead return a single value for the loglikelihood of the data, post-perplexity
-
-        # return self.aux_data_monte_carlo_loglik(gs_in,gp_in,gs_out,gp_out,
-        #     stigma_sample_size,options=options)
-
-
     def gen_simulations(self,gs_in,gp_in,M):
         # builds simulation object and samples it returning an M lengthed list
         inner_simul = InnerGraphSimulation(gs_in,gp_in)
@@ -219,6 +186,35 @@ class Inference(object):
         # builds a simulation object and then samples returning an M lengthed generator
         inner_simul = InnerGraphSimulation(gs_in,gp_in)
         return inner_simul.sample_iter(M)
+
+
+### begin valid but deprecated block
+# if you were to use these you'd use them together, and they would allow you to
+# independently sample the different hidden states, but that will increase variance
+
+    # def loglik_from_aux_data(self,data_sets,graph,max_graph_params):
+    #     return np.log(np.array([self.approx_likelihood_from_aux(data_set,
+    #         graph,max_graph_params) for data_set in data_sets])) 
+
+    # def approx_likelihood_from_aux(self,data_set,graph,max_params):
+    #     K = options["stigma_sample_size"]
+
+    #     gs_in = GraphStructure.from_networkx(sub_graph_from_edge_type(graph,
+    #         edge_types=["hidden_sample"]))
+    #     gp_in = max_graph_params.subgraph_copy(gs_in.edges)
+
+    #     hidden_states_iter = self.gen_iter_simulations_first_only(gs_in,gp_in,K)
+
+    #     return np.mean([likelihood_with_hidden_states(data_set,
+    #         hidden_state_sample,graph,max_params) for hidden_state_sample 
+    #         in hidden_states_iter])
+
+### end valid but deprecated block
+
+        # transform this to instead return a single value for the loglikelihood of the data, post-perplexity
+
+        # return self.aux_data_monte_carlo_loglik(gs_in,gp_in,gs_out,gp_out,
+        #     stigma_sample_size,options=options)
 
 
 
