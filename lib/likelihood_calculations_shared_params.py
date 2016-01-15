@@ -36,7 +36,6 @@ class Inference(object):
         
         return unnormed_logposterior - logsumexp(unnormed_logposterior)
 
-    @profile
     def p_graph_given_d(self,graphs,options):
         # sets a catch for all numerical warnings to be treated as errors
         # np.seterr(all='raise')
