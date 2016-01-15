@@ -24,7 +24,6 @@ class Inference(object):
     #     # i want to get back some kind of object that i can then iterate 
     #     # through on a per graph basis
 
-    @profile
     def logposterior_from_loglik_logsparseprior(self,loglik,sparsity=.5):
         logp = log_sparse_graphset_prior(self.graphs,sparsity=sparsity)
         unnormed_logposterior = loglik+logp
@@ -88,7 +87,6 @@ class Inference(object):
 
         return graphs,np.exp(logposterior),loglikelihood,self.options,self.param_list
 
-    @profile
     def subgraph_cross_entropy(self,max_graph_params):
         n = self.options["num_data_samps"]
         q = np.array(self.options["data_probs"])
@@ -99,13 +97,11 @@ class Inference(object):
         # note that q*approx_loglik_from_hidden_states should be vector)
         return np.array([n*np.dot(q,self.approx_loglik_from_hidden_states(δ,graph,max_graph_params,gp_out,g_idx)) for g_idx,graph in enumerate(self.graphs)])
 
-    @profile
     def gen_iter_simulations_first_only(self,gs_in,gp_in,K):
         # builds a simulation object and then samples returning an M lengthed generator
         inner_simul = InnerGraphSimulation(gs_in, gp_in)
         return inner_simul.sample_iter_solely_first_events(K)
 
-    @profile
     def approx_loglik_from_hidden_states(self,data_sets,graph,max_graph_params,gp_out,g_idx):
         K = self.options["stigma_sample_size"]
 
@@ -121,13 +117,11 @@ class Inference(object):
 
         return logmeanexp(temp_array,axis=0)
 
-    @profile
     def loglik_with_hidden_states(self, data_set, hidden_state_sample,gp_out):
 
         return np.sum([self.one_edge_loglik(cause_time, effect_time,psi,r) for 
             cause_time, effect_time,psi,r in zip(hidden_state_sample,data_set,gp_out.psi,gp_out.r)])
 
-    @profile
     def one_edge_loglik(self, cause_time, effect_time, psi, r, T=4.0):
 
         # is this an instantaneous intervention?
