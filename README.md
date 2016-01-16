@@ -46,7 +46,7 @@ The `InnerGraphSimulation` class generates events on these parameterized edges. 
 Caveat: A `InnerNodeSimulation` object is capable of sampling from the more general Finitary Poisson Process, but this needs to be pursued carefully. If no cut-off is given to either the number of generated events or the value the events can take on, this can result in a loop of event generation that will run forever for the purposes of computation. This is true, despite it being the case that at any particular point in the progress of the algorithm, only a finite number of events can be expected from the generated processes. Further details on this are forthcoming.
 
 Reference:
-Lagnado, D.  & Sloman S. (2006) Time as a guide to cause.*Journal of Experimental Psychology: Learning, Memory & Cognition*, 32, 451-460
+Lagnado, D. & Sloman S. (2006) Time as a guide to cause. *Journal of Experimental Psychology: Learning, Memory & Cognition*, 32, 451-460.
 
 [article]: http://www.ucl.ac.uk/lagnado-lab/publications/lagnado/Lagnado_time_%20as_guide_to_cause.pdf
 [scipy]: http://conference.scipy.org/proceedings/scipy2015/mike_pacer.html
