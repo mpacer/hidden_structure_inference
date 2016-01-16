@@ -32,7 +32,8 @@ generator_dictionary ={ "nodes" : ["A_int","A_obs","A_★","B_obs","B_★","C_ob
         "extract_remove_self_loops": []
     },
     "conditions": {
-        "create_path_complete_condition" : [[("A_int","B_★"),("A_int","C_★"),("A_int","D_★")]],
+        "create_path_complete_condition" : [[("A_int","B_★"),("A_int","C_★"),("A_int","D_★"),("A_int","A_obs"),
+                                             ("A_★","A_obs"),("B_★","B_obs"),("C_★","C_obs"),("D_★","D_obs")]],
     }
 }
 
@@ -77,8 +78,8 @@ edge_semantics={
     }
 }
 
-param_sample_size = 10
-stigma_sample_size = 1000
+param_sample_size = 1
+stigma_sample_size = 10
 # scale_free_bounds = (10**(-.1),10**(.1))
 # scale_free_bounds = (10**(-.25),10**(.25))
 # scale_free_bounds = (10**-1,10**1)
