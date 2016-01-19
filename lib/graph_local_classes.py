@@ -292,8 +292,8 @@ class InnerGraphSimulation(object):
         self._first_events = None
         short_circuit = False
         if first_only:
-            processed_nodes = []
-
+            processed_nodes = set()
+        structure_nodes = set(self.structure.nodes)
         while len(pending) > 0:
             time, node = pending.pop(0)
             if time >= max_time:
@@ -303,8 +303,8 @@ class InnerGraphSimulation(object):
             if first_only:
                 if node in processed_nodes:
                     continue
-                processed_nodes.append(node)
-                if sorted(processed_nodes)==sorted(self.structure.nodes):
+                processed_nodes.add(node)
+                if processed_nodes==structure_nodes:
                     break
 
             children = self.structure.children(node)
