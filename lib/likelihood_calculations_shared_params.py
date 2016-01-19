@@ -125,9 +125,10 @@ class Inference(object):
         temp_array = np.empty(shape=(K,data_sets.shape[0]))
         # import ipdb; ipdb.set_trace()
 
-        # for idx, hidden_state_sample in enumerate(hidden_states_iter):
-        #     temp_array[idx,:] = np.array([self.loglik_with_hidden_states(data_set,hidden_state_sample,gp_out) for data_set in data_sets])
-        temp_array = self.loglik_with_hidden_states_vector(data_sets,hidden_states_iter,gp_out)
+        for idx, hidden_state_sample in enumerate(hidden_states_iter):
+            temp_array[idx,:] = np.array([self.loglik_with_hidden_states(data_set,hidden_state_sample,gp_out) for data_set in data_sets])
+        # import ipdb; ipdb.set_trace()
+        # temp_array = self.loglik_with_hidden_states_vector(data_sets,hidden_states_iter,gp_out)
 
         return logmeanexp(temp_array,axis=0)
 
@@ -137,8 +138,8 @@ class Inference(object):
         K = hidden_states.shape[0]
         temp_array = np.empty(shape=(K,data_sets.shape[0]))
         for i,data_set in enumerate(data_sets):
-            temp_array[:,data_set] = self.one_edge_loglik_vectorized(
-                hidden_states,np.tile(data_set,[K,1]),np.tile(gp_out.psi,[K,1]),np.tile(gp_out.r,[K,1]))
+            temp_array[:,data_set] = self.multi_edge_multisample_loglik_vectorized(
+                hidden_states,data_set,gp_out.psi,gp_out.r)
 
         return temp_array
 
@@ -148,7 +149,7 @@ class Inference(object):
         #loglik = [self.one_edge_loglik(*p) for p in params]
         #return np.sum(loglik)
         import ipdb; ipdb.set_trace()
-        return np.sum(self.one_edge_loglik_vectorized_new(data_set, hidden_state_sample, gp_out.psi,gp_out.r))
+        return np.sum(self.multi_edge_loglik_vectorized(hidden_state_sample,data_set, gp_out.psi,gp_out.r))
 
         # return np.sum([self.one_edge_loglik(cause_time, effect_time,psi,r) for 
         #     cause_time, effect_time,psi,r in zip(hidden_state_sample,data_set,gp_out.psi,gp_out.r)])
@@ -199,9 +200,9 @@ class Inference(object):
                 return np.log(psi) - (r*(effect_time-cause_time)) - (psi/r)*(1-exp_val)
 
     @profile
-    def one_edge_loglik_vectorized(self, cause_time, effect_time, psi, r, T=4.0):
+    def multi_edge_loglik_vectorized(self, cause_time, effect_time, psi, r, T=4.0):
         
-        out = np.zeros(len(cause_time))
+        out = np.zeros(cause_time.shape)
         cause_inf = np.isinf(cause_time)
         cause_ok = ~cause_inf
         effect_inf = np.isinf(effect_time)
@@ -224,9 +225,10 @@ class Inference(object):
         return out
     
     @profile
-    def one_edge_loglik_vectorized_new(self, cause_time, effect_time, psi, r, T=4.0):
+    def multi_edge_multisample_loglik_vectorized(self, cause_times, effect_time, psi, r, T=4.0):
         
         out = np.zeros(len(cause_time))
+        import ipdb; ipdb.set_trace()
         cause_inf = np.isinf(cause_time)
         cause_ok = ~cause_inf
         effect_inf = np.isinf(effect_time)
