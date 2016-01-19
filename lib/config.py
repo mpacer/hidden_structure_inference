@@ -78,7 +78,7 @@ edge_semantics={
     }
 }
 
-param_sample_size = 1
+param_sample_size = 4
 stigma_sample_size = 10
 # scale_free_bounds = (10**(-.1),10**(.1))
 # scale_free_bounds = (10**(-.25),10**(.25))
@@ -107,5 +107,6 @@ options = {
     'data_sets': data_sets,
     'num_data_samps': 100,
     'max_obs_time': 4,
-    'data_probs':[0.512,0.128,0.128,0.032,.2]
+    'data_probs':[0.512,0.128,0.128,0.032,.2],
+    'parallel': False
 }
