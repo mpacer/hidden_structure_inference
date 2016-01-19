@@ -123,17 +123,32 @@ class Inference(object):
         hidden_states_iter = self.gen_simulations_first_only(self.gs_in[g_idx],gp_in,K)
 
         temp_array = np.empty(shape=(K,data_sets.shape[0]))
-        for idx, hidden_state_sample in enumerate(hidden_states_iter):
-            temp_array[idx,:] = np.array([self.loglik_with_hidden_states(data_set,hidden_state_sample,gp_out) for data_set in data_sets])
+        # import ipdb; ipdb.set_trace()
+
+        # for idx, hidden_state_sample in enumerate(hidden_states_iter):
+        #     temp_array[idx,:] = np.array([self.loglik_with_hidden_states(data_set,hidden_state_sample,gp_out) for data_set in data_sets])
+        temp_array = self.loglik_with_hidden_states_vector(data_sets,hidden_states_iter,gp_out)
 
         return logmeanexp(temp_array,axis=0)
+
+    @profile
+    def loglik_with_hidden_states_vector(self,data_sets,hidden_states,gp_out):
+
+        K = hidden_states.shape[0]
+        temp_array = np.empty(shape=(K,data_sets.shape[0]))
+        for i,data_set in enumerate(data_sets):
+            temp_array[:,data_set] = self.one_edge_loglik_vectorized(
+                hidden_states,np.tile(data_set,[K,1]),np.tile(gp_out.psi,[K,1]),np.tile(gp_out.r,[K,1]))
+
+        return temp_array
 
     @profile
     def loglik_with_hidden_states(self, data_set, hidden_state_sample,gp_out):
         #params = zip(hidden_state_sample,data_set,gp_out.psi,gp_out.r)
         #loglik = [self.one_edge_loglik(*p) for p in params]
         #return np.sum(loglik)
-        return np.sum(self.one_edge_loglik_vectorized(data_set, hidden_state_sample, gp_out.psi,gp_out.r))
+        import ipdb; ipdb.set_trace()
+        return np.sum(self.one_edge_loglik_vectorized_new(data_set, hidden_state_sample, gp_out.psi,gp_out.r))
 
         # return np.sum([self.one_edge_loglik(cause_time, effect_time,psi,r) for 
         #     cause_time, effect_time,psi,r in zip(hidden_state_sample,data_set,gp_out.psi,gp_out.r)])
@@ -185,6 +200,7 @@ class Inference(object):
 
     @profile
     def one_edge_loglik_vectorized(self, cause_time, effect_time, psi, r, T=4.0):
+        
         out = np.zeros(len(cause_time))
         cause_inf = np.isinf(cause_time)
         cause_ok = ~cause_inf
@@ -196,17 +212,41 @@ class Inference(object):
 
         idx = cause_ok & effect_inf
         exp_val = np.exp(-r[idx] * (T - cause_time[idx]))
+        import ipdb; ipdb.set_trace()
         out[idx] = -(psi[idx] / r[idx]) * (1 - exp_val)
 
-        idx = cause_ok & (effect_time < cause_time)
-        out[idx] = -np.inf
+        out[cause_ok & (effect_time[effect_ok] < cause_time[effect_ok])] = -np.inf
 
         idx = cause_ok & (effect_time >= cause_time)
         exp_val = np.exp(-r[idx] * (effect_time[idx] - cause_time[idx]))
         out[idx] = np.log(psi[idx]) - (r[idx] * (effect_time[idx] - cause_time[idx])) - (psi[idx] / r[idx]) * (1 - exp_val)
 
         return out
+    
+    @profile
+    def one_edge_loglik_vectorized_new(self, cause_time, effect_time, psi, r, T=4.0):
+        
+        out = np.zeros(len(cause_time))
+        cause_inf = np.isinf(cause_time)
+        cause_ok = ~cause_inf
+        effect_inf = np.isinf(effect_time)
+        effect_ok = ~effect_inf
+        #out[(cause_time - effect_time) == 0] = 0
+        #out[cause_inf & effect_inf] = 0
+        out[cause_inf & effect_ok] = -np.inf
 
+        idx = cause_ok & effect_inf
+        exp_val = np.exp(-r[idx] * (T - cause_time[idx]))
+        import ipdb; ipdb.set_trace()
+        out[idx] = -(psi[idx] / r[idx]) * (1 - exp_val)
+
+        out[cause_ok & (effect_time[effect_ok] < cause_time[effect_ok])] = -np.inf
+
+        idx = cause_ok & (effect_time >= cause_time)
+        exp_val = np.exp(-r[idx] * (effect_time[idx] - cause_time[idx]))
+        out[idx] = np.log(psi[idx]) - (r[idx] * (effect_time[idx] - cause_time[idx])) - (psi[idx] / r[idx]) * (1 - exp_val)
+
+        return out
     def gen_simulations(self,gs_in,gp_in,M):
         # builds simulation object and samples it returning an M lengthed list
         inner_simul = InnerGraphSimulation(gs_in,gp_in)
