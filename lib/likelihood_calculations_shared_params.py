@@ -36,6 +36,7 @@ class Inference(object):
         
         return unnormed_logposterior - logsumexp(unnormed_logposterior)
 
+    @profile
     def p_graph_given_d(self,graphs,options):
         # sets a catch for all numerical warnings to be treated as errors
         # np.seterr(all='raise')
@@ -70,14 +71,15 @@ class Inference(object):
         max_graph_params = GraphParams.from_networkx(self.max_graph)
         
         self.param_list = [max_graph_params.sample() for x in range(num_params)]
-        
-        loglikelihood_by_param = np.array(Parallel(n_jobs = -1, 
-            backend = "multiprocessing", verbose = 20)(
-            delayed(self.subgraph_cross_entropy)(
-                max_graph_params.from_dict(params)) for params in self.param_list))
 
-        # loglikelihood_by_param = np.array([self.subgraph_cross_entropy(max_graph_params.from_dict(params)) 
-        #     for params in self.param_list])
+        if self.options["parallel"]:            
+            loglikelihood_by_param = np.array(Parallel(n_jobs = -1, 
+                backend = "multiprocessing", verbose = 20)(
+                delayed(self.subgraph_cross_entropy)(
+                    max_graph_params.from_dict(params)) for params in self.param_list))
+        else:
+            loglikelihood_by_param = np.array([self.subgraph_cross_entropy(max_graph_params.from_dict(params)) 
+                for params in self.param_list])
         
         loglikelihood = logmeanexp(loglikelihood_by_param,axis=0)
         
@@ -86,6 +88,7 @@ class Inference(object):
 
         return graphs,np.exp(logposterior),loglikelihood,self.options,self.param_list
 
+    @profile
     def subgraph_cross_entropy(self,max_graph_params):
         n = self.options["num_data_samps"]
         q = np.array(self.options["data_probs"])
@@ -96,11 +99,19 @@ class Inference(object):
         # note that q*approx_loglik_from_hidden_states should be vector)
         return np.array([n*np.dot(q,self.approx_loglik_from_hidden_states(δ,graph,max_graph_params,gp_out,g_idx)) for g_idx,graph in enumerate(self.graphs)])
 
+    @profile
     def gen_iter_simulations_first_only(self,gs_in,gp_in,K):
         # builds a simulation object and then samples returning an M lengthed generator
         inner_simul = InnerGraphSimulation(gs_in, gp_in)
         return inner_simul.sample_iter_solely_first_events(K)
 
+    @profile
+    def gen_simulations_first_only(self,gs_in,gp_in,K):
+        # builds a simulation object and then samples returning an M lengthed generator
+        inner_simul = InnerGraphSimulation(gs_in, gp_in)
+        return inner_simul.sample_solely_first_events(K)
+
+    @profile
     def approx_loglik_from_hidden_states(self,data_sets,graph,max_graph_params,gp_out,g_idx):
         K = self.options["stigma_sample_size"]
 
@@ -108,7 +119,8 @@ class Inference(object):
         #     edge_types=["hidden_sample"]))
         gp_in = max_graph_params.subgraph_copy(self.gs_in[g_idx].edges)
 
-        hidden_states_iter = self.gen_iter_simulations_first_only(self.gs_in[g_idx],gp_in,K)
+        # hidden_states_iter = self.gen_iter_simulations_first_only(self.gs_in[g_idx],gp_in,K)
+        hidden_states_iter = self.gen_simulations_first_only(self.gs_in[g_idx],gp_in,K)
 
         temp_array = np.empty(shape=(K,data_sets.shape[0]))
         for idx, hidden_state_sample in enumerate(hidden_states_iter):
@@ -116,11 +128,17 @@ class Inference(object):
 
         return logmeanexp(temp_array,axis=0)
 
+    @profile
     def loglik_with_hidden_states(self, data_set, hidden_state_sample,gp_out):
+        #params = zip(hidden_state_sample,data_set,gp_out.psi,gp_out.r)
+        #loglik = [self.one_edge_loglik(*p) for p in params]
+        #return np.sum(loglik)
+        return np.sum(self.one_edge_loglik_vectorized(data_set, hidden_state_sample, gp_out.psi,gp_out.r))
 
-        return np.sum([self.one_edge_loglik(cause_time, effect_time,psi,r) for 
-            cause_time, effect_time,psi,r in zip(hidden_state_sample,data_set,gp_out.psi,gp_out.r)])
+        # return np.sum([self.one_edge_loglik(cause_time, effect_time,psi,r) for 
+        #     cause_time, effect_time,psi,r in zip(hidden_state_sample,data_set,gp_out.psi,gp_out.r)])
 
+    @profile
     def one_edge_loglik(self, cause_time, effect_time, psi, r, T=4.0):
 
         # is this an instantaneous intervention?
@@ -165,6 +183,29 @@ class Inference(object):
 
                 return np.log(psi) - (r*(effect_time-cause_time)) - (psi/r)*(1-exp_val)
 
+    @profile
+    def one_edge_loglik_vectorized(self, cause_time, effect_time, psi, r, T=4.0):
+        out = np.zeros(len(cause_time))
+        cause_inf = np.isinf(cause_time)
+        cause_ok = ~cause_inf
+        effect_inf = np.isinf(effect_time)
+        effect_ok = ~effect_inf
+        #out[(cause_time - effect_time) == 0] = 0
+        #out[cause_inf & effect_inf] = 0
+        out[cause_inf & effect_ok] = -np.inf
+
+        idx = cause_ok & effect_inf
+        exp_val = np.exp(-r[idx] * (T - cause_time[idx]))
+        out[idx] = -(psi[idx] / r[idx]) * (1 - exp_val)
+
+        idx = cause_ok & (effect_time < cause_time)
+        out[idx] = -np.inf
+
+        idx = cause_ok & (effect_time >= cause_time)
+        exp_val = np.exp(-r[idx] * (effect_time[idx] - cause_time[idx]))
+        out[idx] = np.log(psi[idx]) - (r[idx] * (effect_time[idx] - cause_time[idx])) - (psi[idx] / r[idx]) * (1 - exp_val)
+
+        return out
 
     def gen_simulations(self,gs_in,gp_in,M):
         # builds simulation object and samples it returning an M lengthed list
