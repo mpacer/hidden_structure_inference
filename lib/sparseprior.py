@@ -17,3 +17,8 @@ def log_sparse_graphset_prior(graphs,sparsity=.5):
     max_edges = np.max([len(x.edges()) for x in graphs])
     unnormed_logp = np.array([log_sparse_1graph_prior_unnormed(graph,max_edges,sparsity=sparsity) for graph in graphs])
     return unnormed_logp - mdp_logsumexp(unnormed_logp)
+
+def logposterior_from_loglik_logsparseprior(graphs,loglik,sparsity=.5):
+    logp = log_sparse_graphset_prior(graphs,sparsity=sparsity)
+    unnormed_logposterior = loglik+logp
+    return unnormed_logposterior - mdp_logsumexp(unnormed_logposterior)
