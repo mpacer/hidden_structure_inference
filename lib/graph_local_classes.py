@@ -37,17 +37,17 @@ class GraphStructure(object):
             return False
         return True
     
-    def children(self, node):
+    def children_edges(self, node):
         return [e for e in self.edges if e[0] == node]
 
-    def children_list(self, node_list):
-        return [self.children(node) for node in node_list]
+    def children_edges_list(self, node_list):
+        return [self.children_edges(node) for node in node_list]
 
-    def parents(self, node):
+    def parents_edges(self, node):
         return [e for e in self.edges if e[1] == node]
 
-    def parents_list(self,node_list):
-        return [self.parents(node) for node in node_list]
+    def parents_edges_list(self,node_list):
+        return [self.parents_edges(node) for node in node_list]
 
 
 
@@ -255,7 +255,7 @@ class InnerGraphSimulation(object):
         # event_times.sort()
         # return [(t, edge[1]) for t in event_times]
         # import ipdb; ipdb.set_trace()
-        return [(event_time[0], edge[1])]
+        return [(event_time, edge[1])]
 
     @profile
     def sample_edge_first_event_only_tuple(self, edge, time):
@@ -299,9 +299,9 @@ class InnerGraphSimulation(object):
                 if sorted(processed_nodes)==sorted(self.structure.nodes):
                     break
 
-            children = self.structure.children(node)
-# this goes to each of the children of the node and initiates events along that edge
-            for edge in children:
+            children_edges = self.structure.children_edges(node)
+# this goes to each of the children_edges of the node and initiates events along that edge
+            for edge in children_edges:
                 child_events = self.sample_edge(edge, time)
                 if len(child_events) == 0:
                     continue
@@ -335,11 +335,12 @@ class InnerGraphSimulation(object):
             else:
                 processed_nodes.add(node)
             if processed_nodes==structure_nodes:
+                # this only works if it is first event only
                 break
 
-            children = self.structure.children(node)
-# this goes to each of the children of the node and initiates events along that edge
-            for edge in children:
+            children_edges = self.structure.children_edges(node)
+# this goes to each of the children_edges of the node and initiates events along that edge
+            for edge in children_edges:
                 if edge[1] in processed_nodes:
                     continue
                 else:
