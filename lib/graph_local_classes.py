@@ -285,6 +285,7 @@ class InnerGraphSimulation(object):
         self._compute_first_events()
         return self._first_events
 
+    @profile
     def _sample_solely_first_events(self, max_time=4.0):
         first_only=True
         pending = [(self.init_time, self.init_node)]
@@ -333,6 +334,7 @@ class InnerGraphSimulation(object):
             first_events = self._sample(first_only=first_only, max_time=max_time)
             yield first_events
 
+    @profile
     def sample_solely_first_events(self, k=1, first_only=True, max_time=4.0):
         first_events = np.empty((k, len(self.structure.nodes)))
         for i in range(k):
