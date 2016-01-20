@@ -36,7 +36,7 @@ class Inference(object):
         
         return unnormed_logposterior - logsumexp(unnormed_logposterior)
 
-    # @profile
+    @profile
     def p_graph_given_d(self,graphs,options):
         # sets a catch for all numerical warnings to be treated as errors
         # np.seterr(all='raise')
@@ -88,7 +88,7 @@ class Inference(object):
 
         return graphs,np.exp(logposterior),loglikelihood,self.options,self.param_list
 
-    # @profile
+    @profile
     def subgraph_cross_entropy(self,max_graph_params):
         n = self.options["num_data_samps"]
         q = np.array(self.options["data_probs"])
@@ -99,19 +99,19 @@ class Inference(object):
         # note that q*approx_loglik_from_hidden_states should be vector)
         return np.array([n*np.dot(q,self.approx_loglik_from_hidden_states(δ,graph,max_graph_params,gp_out,g_idx)) for g_idx,graph in enumerate(self.graphs)])
 
-    # @profile
+    @profile
     def gen_iter_simulations_first_only(self,gs_in,gp_in,K):
         # builds a simulation object and then samples returning an M lengthed generator
         inner_simul = InnerGraphSimulation(gs_in, gp_in)
         return inner_simul.sample_iter_solely_first_events(K)
 
-    # @profile
+    @profile
     def gen_simulations_first_only(self,gs_in,gp_in,K):
         # builds a simulation object and then samples returning an M lengthed generator
         inner_simul = InnerGraphSimulation(gs_in, gp_in)
         return inner_simul.sample_solely_first_events(K)
 
-    # @profile
+    @profile
     def approx_loglik_from_hidden_states(self,data_sets,graph,max_graph_params,gp_out,g_idx):
         K = self.options["stigma_sample_size"]
 
@@ -134,7 +134,7 @@ class Inference(object):
         # import ipdb; ipdb.set_trace()
         return logmeanexp(temp_array,axis=0)
 
-    # @profile
+    @profile
     def loglik_with_hidden_states_vectorized(self,data_sets,hidden_states,gp_out):
 
         # K = hidden_states.shape[0]
@@ -153,6 +153,32 @@ class Inference(object):
         
 
         return np.sum(self.multi_edge_loglik_vectorized(h_states,d_sets,gp_out.psi,gp_out.r),axis=-1)
+
+    @profile
+    def multi_edge_loglik_vectorized(self, cause_time, effect_time, psi, r, T=4.0):
+        cause_time, effect_time, psi, r = np.broadcast_arrays(cause_time, effect_time, psi, r)
+        out = np.zeros(cause_time.shape)
+        cause_inf = np.isinf(cause_time)
+        cause_ok = ~cause_inf
+        effect_inf = np.isinf(effect_time)
+        effect_ok = ~effect_inf
+        #out[(cause_time - effect_time) == 0] = 0
+        #out[cause_inf & effect_inf] = 0
+        out[cause_inf & effect_ok] = -np.inf
+
+        idx = cause_ok & effect_inf
+        exp_val = np.exp(-r[idx] * (T - cause_time[idx]))
+        
+        out[idx] = -(psi[idx] / r[idx]) * (1 - exp_val)
+
+        # out[cause_ok & (effect_time[effect_ok] < cause_time[effect_ok])] = -np.inf
+        out[cause_ok & effect_ok & (effect_time < cause_time)] = -np.inf
+
+        idx = cause_ok & (effect_time >= cause_time)
+        exp_val = np.exp(-r[idx] * (effect_time[idx] - cause_time[idx]))
+        out[idx] = np.log(psi[idx]) - (r[idx] * (effect_time[idx] - cause_time[idx])) - (psi[idx] / r[idx]) * (1 - exp_val)
+        # import ipdb; ipdb.set_trace()
+        return out
 
     # @profile
     def loglik_with_hidden_states(self, data_set, hidden_state_sample,gp_out):
@@ -211,68 +237,6 @@ class Inference(object):
                     exp_val = 0         
 
                 return np.log(psi) - (r*(effect_time-cause_time)) - (psi/r)*(1-exp_val)
-
-    # @profile
-    def multi_edge_loglik_vectorized(self, cause_time, effect_time, psi, r, T=4.0):
-        cause_time, effect_time, psi, r = np.broadcast_arrays(cause_time, effect_time, psi, r)
-        out = np.zeros(cause_time.shape)
-        cause_inf = np.isinf(cause_time)
-        cause_ok = ~cause_inf
-        effect_inf = np.isinf(effect_time)
-        effect_ok = ~effect_inf
-        #out[(cause_time - effect_time) == 0] = 0
-        #out[cause_inf & effect_inf] = 0
-        out[cause_inf & effect_ok] = -np.inf
-
-        idx = cause_ok & effect_inf
-        exp_val = np.exp(-r[idx] * (T - cause_time[idx]))
-        
-        out[idx] = -(psi[idx] / r[idx]) * (1 - exp_val)
-
-        # out[cause_ok & (effect_time[effect_ok] < cause_time[effect_ok])] = -np.inf
-        out[cause_ok & effect_ok & (effect_time < cause_time)] = -np.inf
-
-        idx = cause_ok & (effect_time >= cause_time)
-        exp_val = np.exp(-r[idx] * (effect_time[idx] - cause_time[idx]))
-        out[idx] = np.log(psi[idx]) - (r[idx] * (effect_time[idx] - cause_time[idx])) - (psi[idx] / r[idx]) * (1 - exp_val)
-        # import ipdb; ipdb.set_trace()
-        return out
-    
-    # @profile
-    def multi_edge_multisample_loglik_vectorized(self, cause_times, effect_time, psi, r, T=4.0):
-        
-        #passing in many samples, and one dataset for all edges, return matrix of likelihoods
-        
-        # if this happened then the indexing wouldn't work properly
-        assert cause_times.shape[0]!=cause_times.shape[1]
-
-        rs = np.tile(r,[cause_times.shape[0],1])
-        psis = np.tile(psi,[cause_times.shape[0],1])
-        e_times = np.tile(effect_time,[cause_times.shape[0],1])
-        out = np.zeros(cause_times.shape)
-        cause_inf = np.isinf(cause_times)
-        cause_ok = ~cause_inf
-        effect_inf = np.isinf(effect_time)
-        effect_ok = ~effect_inf
-        #out[(cause_times - e_times) == 0] = 0
-        #out[cause_inf & effect_inf] = 0
-        out[cause_inf & effect_ok] = -np.inf
-
-        idx = cause_ok & effect_inf
-        if idx.any():
-            exp_val = np.exp(-rs[idx] * (T - cause_times[idx]))
-            # import ipdb; ipdb.set_trace()
-            out[idx] = -(psis[idx] / rs[idx]) * (1 - exp_val)
-
-        # import ipdb; ipdb.set_trace()
-        out[cause_ok & (effect_time[effect_ok] < cause_times[:,effect_ok])] = -np.inf
-
-        idx = cause_ok & (effect_time >= cause_times) & ((e_times - cause_times)!=0)
-        if idx.any():
-            exp_val = np.exp(-rs[idx] * (e_times[idx] - cause_times[idx]))
-            out[idx] = np.log(psis[idx]) - (rs[idx] * (e_times[idx] - cause_times[idx])) - (psis[idx] / rs[idx]) * (1 - exp_val)
-
-        return out
 
 
     def gen_simulations(self,gs_in,gp_in,M):
