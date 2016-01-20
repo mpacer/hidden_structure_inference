@@ -99,6 +99,7 @@ class Inference(object):
         # note that q*approx_loglik_from_hidden_states should be vector)
         return np.array([n*np.dot(q,self.approx_loglik_from_hidden_states(δ,graph,max_graph_params,gp_out,g_idx)) for g_idx,graph in enumerate(self.graphs)])
 
+    @profile
     def gen_iter_simulations_first_only(self,gs_in,gp_in,K):
         # builds a simulation object and then samples returning an M lengthed generator
         inner_simul = InnerGraphSimulation(gs_in, gp_in)

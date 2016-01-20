@@ -334,6 +334,7 @@ class InnerGraphSimulation(object):
             first_events = self._sample(first_only=first_only, max_time=max_time)
             yield first_events
 
+    @profile
     def sample_solely_first_events(self, k=1, first_only=True, max_time=4.0):
         first_events = np.empty((k, len(self.structure.nodes)))
         for i in range(k):
