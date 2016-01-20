@@ -285,6 +285,7 @@ class InnerGraphSimulation(object):
         self._compute_first_events()
         return self._first_events
 
+    @profile
     def _sample_solely_first_events(self, max_time=4.0):
         first_only=True
         pending = [(self.init_time, self.init_node)]
