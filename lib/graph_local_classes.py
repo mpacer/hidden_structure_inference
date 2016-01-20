@@ -1,5 +1,6 @@
 import numpy as np
 import networkx as nx
+import heapq
 
 from .utils import scale_free_sampler, two_list_match_indices
 from copy import deepcopy
@@ -39,9 +40,14 @@ class GraphStructure(object):
     def children(self, node):
         return [e for e in self.edges if e[0] == node]
 
+    def children_list(self, node_list):
+        return [self.children(node) for node in node_list]
+
     def parents(self, node):
         return [e for e in self.edges if e[1] == node]
 
+    def parents_list(self,node_list):
+        return [self.parents(node) for node in node_list]
 
 
 
@@ -248,6 +254,27 @@ class InnerGraphSimulation(object):
         event_time = time + np.random.exponential(scale=self.params.r[index]/num_events, size=1)
         # event_times.sort()
         # return [(t, edge[1]) for t in event_times]
+        # import ipdb; ipdb.set_trace()
+        return [(event_time[0], edge[1])]
+
+    @profile
+    def sample_edge_first_event_only_tuple(self, edge, time):
+        index = self.structure.edges.index(edge)
+        
+        # does it occur?
+        occurs = np.random.rand() < self.params.p
+        if not occurs:
+            return []
+        
+        # how many events?
+        num_events = np.random.poisson(lam=self.params.mu[index])
+        if num_events == 0:
+            return []
+        
+        # when do those events occur?
+        event_time = time + np.random.exponential(scale=self.params.r[index]/num_events, size=1)
+        # event_times.sort()
+        # return [(t, edge[1]) for t in event_times]
         return [(event_time, edge[1])]
 
         
@@ -287,36 +314,43 @@ class InnerGraphSimulation(object):
 
     @profile
     def _sample_solely_first_events(self, max_time=4.0):
-        first_only=True
-        pending = [(self.init_time, self.init_node)]
+        pending = []
+        heapq.heappush(pending,(self.init_time, self.init_node))
+        # pending = [(self.init_time, self.init_node)]
         self._all_events = []
         self._first_events = None
         short_circuit = False
-        if first_only:
-            processed_nodes = set()
+        processed_nodes = set()
         structure_nodes = set(self.structure.nodes)
         while len(pending) > 0:
-            time, node = pending.pop(0)
+            # time, node = pending.pop(0)
+            # import ipdb; ipdb.set_trace()
+            time, node = heapq.heappop(pending)
             if time >= max_time:
                 break
 
             self._all_events.append((time, node))
-            if first_only:
-                if node in processed_nodes:
-                    continue
+            if node in processed_nodes:
+                continue
+            else:
                 processed_nodes.add(node)
-                if processed_nodes==structure_nodes:
-                    break
+            if processed_nodes==structure_nodes:
+                break
 
             children = self.structure.children(node)
 # this goes to each of the children of the node and initiates events along that edge
             for edge in children:
-                child_events = self.sample_edge_first_event_only(edge, time)
-                if len(child_events) == 0:
+                if edge[1] in processed_nodes:
                     continue
-                pending.extend(child_events)
-            # import ipdb; ipdb.set_trace()
-            pending.sort()
+                else:
+                    child_events = self.sample_edge_first_event_only(edge, time)
+                    # import ipdb; ipdb.set_trace()
+                    if len(child_events) == 0:
+                        continue
+                    # import ipdb; ipdb.set_trace()
+                    heapq.heappush(pending,*child_events)
+                # import ipdb; ipdb.set_trace()
+                # pending.sort()
             
         self._all_events.sort()
         self._compute_first_events()
@@ -324,7 +358,7 @@ class InnerGraphSimulation(object):
 
     
     def sample(self, k=1, first_only=True, max_time=4.0):
-        first_events = np.empty((k, len(self.structure.nodes)))
+        first_events = np.zeros((k, len(self.structure.nodes)))
         for i in range(k):
             first_events[i] = self._sample(first_only=first_only, max_time=max_time)
         return first_events
@@ -334,10 +368,11 @@ class InnerGraphSimulation(object):
             first_events = self._sample(first_only=first_only, max_time=max_time)
             yield first_events
 
-    @profile
+    # @profile
     def sample_solely_first_events(self, k=1, first_only=True, max_time=4.0):
-        first_events = np.empty((k, len(self.structure.nodes)))
+        first_events = np.zeros((k, len(self.structure.nodes)))
         for i in range(k):
+            # import ipdb; ipdb.set_trace()
             first_events[i] = self._sample_solely_first_events(max_time=max_time)
         return first_events
     
