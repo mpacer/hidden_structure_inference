@@ -319,9 +319,9 @@ class InnerGraphSimulation(object):
         pending = []
         heapq.heappush(pending,(self.init_time, self.init_node))
         # pending = [(self.init_time, self.init_node)]
-        self._all_events = []
+        # self._all_events = []
         self._first_events = {node: np.inf for node in self.structure.nodes}
-        short_circuit = False
+        # short_circuit = False
         processed_nodes = set()
         structure_nodes = set(self.structure.nodes)
         while len(pending) > 0:
@@ -332,13 +332,14 @@ class InnerGraphSimulation(object):
                 break
 
             #self._all_events.append((time, node))
-            if time < self._first_events[node]:
-                self._first_events[node] = time
+            # if time < self._first_events[node]:
+                # self._first_events[node] = time
 
             if node in processed_nodes:
                 continue
             else:
                 processed_nodes.add(node)
+                self._first_events[node] = time
             if processed_nodes==structure_nodes:
                 # this only works if it is first event only
                 break
@@ -364,7 +365,60 @@ class InnerGraphSimulation(object):
         #return np.array(self._first_events)
         return np.array([self._first_events[node] for node in self.structure.nodes])
 
-    
+    @profile
+    def _sample_solely_first_events_better(self, max_time=4.0):
+        pending = []
+        heapq.heappush(pending,(self.init_time, self.init_node))
+        # pending = [(self.init_time, self.init_node)]
+        self._first_events = {node: np.inf for node in self.structure.nodes}
+        processed_nodes = set()
+        structure_nodes = set(self.structure.nodes)
+        while len(pending) > 0:
+            # time, node = pending.pop(0)
+            # import ipdb; ipdb.set_trace()
+            time, node = heapq.heappop(pending)
+            
+            if processed_nodes==structure_nodes or time >= max_time:
+                # this only works if it is first event only
+                break
+
+            if node in processed_nodes:
+                continue
+            else:
+                self._first_events[node] = time
+                processed_nodes.add(node)
+
+            
+            #self._all_events.append((time, node))
+            # if time < self._first_events[node]:
+            #     self._first_events[node] = time
+
+
+            # if processed_nodes==structure_nodes:
+                # this only works if it is first event only
+                # break
+
+            children_edges = self.structure.child_edges[node]
+# this goes to each of the children_edges of the node and initiates events along that edge
+            # import ipdb; ipdb.set_trace()
+            for edge in children_edges:
+                if edge[1] in processed_nodes:
+                    continue
+                else:
+                    child_events = self.sample_edge_first_event_only(edge, time)
+                    # import ipdb; ipdb.set_trace()
+                    if not child_events:
+                        continue
+                    # import ipdb; ipdb.set_trace()
+                    heapq.heappush(pending,child_events)
+                # import ipdb; ipdb.set_trace()
+                # pending.sort()
+            
+        #self._all_events.sort()
+        #self._compute_first_events()
+        #return np.array(self._first_events)
+        return np.array([self._first_events[node] for node in self.structure.nodes])
+
     def sample(self, k=1, first_only=True, max_time=4.0):
         first_events = np.zeros((k, len(self.structure.nodes)))
         for i in range(k):
