@@ -12,5 +12,5 @@ def extract_edge_weights_from_post(edge_query,graphs,posterior):
         for edge in edge_query:
             if edge in g.edges():
                 edge_query[edge]+=posterior[i]
-    assert all([edge-1<=1e-14 for edge in edge_query.values()])
+    assert all([edge-1<=1e-13 for edge in edge_query.values()])
     pass

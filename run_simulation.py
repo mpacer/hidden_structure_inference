@@ -18,11 +18,17 @@ def main():
         Node_Name_Rule.graph_semantics_apply(graph,config.node_semantics)
         Edge_Semantics_Rule.graph_semantics_apply(graph,config.edge_semantics)
     
-    num_conditions = 4    
+    # num_conditions = 4    
+    
+    # options = [config.options]*num_conditions
+    # for i in range(num_conditions):
+    #     options[i]["data_sets"] = cond_to_data(config.conds[i,:])
+
+    num_conditions = 3
     
     options = [config.options]*num_conditions
     for i in range(num_conditions):
-        options[i]["data_sets"] = cond_to_data(config.conds[i,:])
+        options[i]["data_sets"] = cond_to_data(config.lesser_conds[i,:])
 
 
     result_graphs = [None]*num_conditions

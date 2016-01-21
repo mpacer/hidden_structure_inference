@@ -32,7 +32,8 @@ generator_dictionary ={ "nodes" : ["A_int","A_obs","A_★","B_obs","B_★","C_ob
         "extract_remove_self_loops": []
     },
     "conditions": {
-        "create_path_complete_condition" : [[("A_int","B_★"),("A_int","C_★"),("A_int","D_★")]],
+        "create_path_complete_condition" : [[("A_int","B_★"),("A_int","C_★"),("A_int","D_★"),("A_int","A_obs"),
+                                             ("A_★","A_obs"),("B_★","B_obs"),("C_★","C_obs"),("D_★","D_obs")]],
     }
 }
 
@@ -77,14 +78,14 @@ edge_semantics={
     }
 }
 
-param_sample_size = 3000
-stigma_sample_size = 10000
 
+param_sample_size = 500
+stigma_sample_size = 50000
 # scale_free_bounds = (10**(-.1),10**(.1))
 
 # scale_free_bounds = (10**(-.25),10**(.25))
-# scale_free_bounds = (10**-1,10**1)
-scale_free_bounds = (10**-3,10**3)
+scale_free_bounds = (10**-1,10**1)
+# scale_free_bounds = (10**-3,10**3)
 small_val = .05
 
 cond1 = [0,small_val,small_val,small_val]
@@ -93,6 +94,7 @@ cond3 = [0,3,2,1]
 cond4 = [0,1,2,2]
 
 conds = np.array([cond1,cond2,cond3,cond4])
+lesser_conds = np.array([cond2,cond3,cond4])
 
 # from .misc import cond_to_data
 # data_sets = cond_to_data(cond2)
@@ -108,5 +110,6 @@ options = {
     'data_sets': data_sets,
     'num_data_samps': 100,
     'max_obs_time': 4,
-    'data_probs':[0.512,0.128,0.128,0.032,.2]
+    'data_probs':[0.512,0.128,0.128,0.032,.2],
+    'parallel': False
 }
