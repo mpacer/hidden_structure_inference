@@ -29,6 +29,7 @@ def main():
     options = [config.options]*num_conditions
     for i in range(num_conditions):
         options[i]["data_sets"] = cond_to_data(config.lesser_conds[i,:])
+        options[i]["parallel"] = True
 
 
     result_graphs = [None]*num_conditions
