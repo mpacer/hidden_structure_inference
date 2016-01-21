@@ -218,7 +218,8 @@ class InnerGraphSimulation(object):
             self.init_node = self.structure.nodes[0]
         self.init_time = init_time
         self._all_events = None
-        self._first_events = None
+        self._first_events = {node: np.inf for node in self.structure.nodes}
+        # self._first_events = None
         
     def sample_edge(self, edge, time):
         index = self.structure.edges.index(edge)
@@ -238,7 +239,7 @@ class InnerGraphSimulation(object):
         event_times.sort()
         return [(t, edge[1]) for t in event_times]
     
-    @profile
+    # @profile
     def sample_edge_first_event_only(self, edge, time):
         index = self.structure.edges.index(edge)
         
@@ -314,14 +315,15 @@ class InnerGraphSimulation(object):
         self._compute_first_events()
         return self._first_events
 
-    @profile
+    # @profile
     def _sample_solely_first_events(self, max_time=4.0):
+        # self._first_events = {node: np.inf for node in self.structure.nodes}
         pending = []
         heapq.heappush(pending,(self.init_time, self.init_node))
         # pending = [(self.init_time, self.init_node)]
         # self._all_events = []
-        self._first_events = {node: np.inf for node in self.structure.nodes}
         # short_circuit = False
+        # import ipdb; ipdb.set_trace()
         processed_nodes = set()
         structure_nodes = set(self.structure.nodes)
         while len(pending) > 0:
@@ -365,7 +367,7 @@ class InnerGraphSimulation(object):
         #return np.array(self._first_events)
         return np.array([self._first_events[node] for node in self.structure.nodes])
 
-    @profile
+    # @profile
     def _sample_solely_first_events_better(self, max_time=4.0):
         pending = []
         heapq.heappush(pending,(self.init_time, self.init_node))
@@ -436,6 +438,8 @@ class InnerGraphSimulation(object):
         for i in range(k):
             # import ipdb; ipdb.set_trace()
             first_events[i] = self._sample_solely_first_events(max_time=max_time)
+            self._first_events = {node: np.inf for node in self.structure.nodes}
+
         return first_events
     
     def sample_iter_solely_first_events(self, k=1, first_only=True, max_time=4.0):

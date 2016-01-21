@@ -36,7 +36,7 @@ class Inference(object):
         
         return unnormed_logposterior - logsumexp(unnormed_logposterior)
 
-    @profile
+    # @profile
     def p_graph_given_d(self,graphs,options):
         # sets a catch for all numerical warnings to be treated as errors
         # np.seterr(all='raise')
@@ -88,7 +88,7 @@ class Inference(object):
 
         return graphs,np.exp(logposterior),loglikelihood,self.options,self.param_list
 
-    @profile
+    # @profile
     def subgraph_cross_entropy(self,max_graph_params):
         n = self.options["num_data_samps"]
         q = np.array(self.options["data_probs"])
@@ -99,19 +99,19 @@ class Inference(object):
         # note that q*approx_loglik_from_hidden_states should be vector)
         return np.array([n*np.dot(q,self.approx_loglik_from_hidden_states(δ,graph,max_graph_params,gp_out,g_idx)) for g_idx,graph in enumerate(self.graphs)])
 
-    @profile
+    # @profile
     def gen_iter_simulations_first_only(self,gs_in,gp_in,K):
         # builds a simulation object and then samples returning an M lengthed generator
         inner_simul = InnerGraphSimulation(gs_in, gp_in)
         return inner_simul.sample_iter_solely_first_events(K)
 
-    @profile
+    # @profile
     def gen_simulations_first_only(self,gs_in,gp_in,K):
         # builds a simulation object and then samples returning an M lengthed generator
         inner_simul = InnerGraphSimulation(gs_in, gp_in)
         return inner_simul.sample_solely_first_events(K)
 
-    @profile
+    # @profile
     def approx_loglik_from_hidden_states(self,data_sets,graph,max_graph_params,gp_out,g_idx):
         K = self.options["stigma_sample_size"]
 
@@ -134,7 +134,7 @@ class Inference(object):
         # import ipdb; ipdb.set_trace()
         return logmeanexp(temp_array,axis=0)
 
-    @profile
+    # @profile
     def loglik_with_hidden_states_vectorized(self,data_sets,hidden_states,gp_out):
 
         # K = hidden_states.shape[0]
@@ -154,7 +154,7 @@ class Inference(object):
 
         return np.sum(self.multi_edge_loglik_vectorized(h_states,d_sets,gp_out.psi,gp_out.r),axis=-1)
 
-    @profile
+    # @profile
     def multi_edge_loglik_vectorized(self, cause_time, effect_time, psi, r, T=4.0):
         cause_time, effect_time, psi, r = np.broadcast_arrays(cause_time, effect_time, psi, r)
         out = np.zeros(cause_time.shape)
