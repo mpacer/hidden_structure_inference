@@ -79,7 +79,7 @@ edge_semantics={
 }
 
 param_sample_size = 1
-stigma_sample_size = 1000
+stigma_sample_size = 10000
 # scale_free_bounds = (10**(-.1),10**(.1))
 scale_free_bounds = (10**(-.25),10**(.25))
 # scale_free_bounds = (10**-1,10**1)
@@ -92,6 +92,7 @@ cond3 = [0,3,2,1]
 cond4 = [0,1,2,2]
 
 conds = np.array([cond1,cond2,cond3,cond4])
+lesser_conds = np.array([cond2,cond3,cond4])
 
 # from .misc import cond_to_data
 # data_sets = cond_to_data(cond2)
