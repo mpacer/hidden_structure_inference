@@ -317,7 +317,7 @@ class InnerGraphSimulation(object):
 
     # @profile
     def _sample_solely_first_events(self, max_time=4.0):
-        # self._first_events = {node: np.inf for node in self.structure.nodes}
+        self._first_events = {node: np.inf for node in self.structure.nodes}
         pending = []
         heapq.heappush(pending,(self.init_time, self.init_node))
         # pending = [(self.init_time, self.init_node)]
@@ -438,7 +438,7 @@ class InnerGraphSimulation(object):
         for i in range(k):
             # import ipdb; ipdb.set_trace()
             first_events[i] = self._sample_solely_first_events(max_time=max_time)
-            self._first_events = {node: np.inf for node in self.structure.nodes}
+            # self._first_events = {node: np.inf for node in self.structure.nodes}
 
         return first_events
     
